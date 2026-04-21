@@ -1,5 +1,8 @@
+import tseslint from "typescript-eslint";
+
 /** @type {import("eslint").Linter.Config} */
-export default [
+export default tseslint.config(
+  ...tseslint.configs.recommended,
   {
     ignores: ["dist/", "node_modules/"],
   },
@@ -8,17 +11,12 @@ export default [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
-      globals: {
-        console: "readonly",
-        process: "readonly",
-        __dirname: "readonly",
-        __filename: "readonly",
-      },
     },
     rules: {
-      "no-unused-vars": "warn",
-      "no-undef": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "no-console": "off",
     },
   },
-];
+);

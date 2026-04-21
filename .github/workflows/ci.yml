@@ -43,10 +43,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run ESLint
         run: npx eslint packages/mcp-server/src/ packages/cli/src/
@@ -91,10 +90,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build TypeScript
         run: npm run build
@@ -113,7 +111,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -122,7 +119,7 @@ jobs:
 
       - name: Install and build all
         run: |
-          npm ci
+          npm install
           npm run build
           python -m pip install --upgrade pip
           pip install build
