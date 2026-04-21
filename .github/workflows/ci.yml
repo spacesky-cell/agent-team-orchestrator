@@ -25,7 +25,7 @@ jobs:
           pip install -e packages/core[dev]
 
       - name: Run Ruff
-        run: ruff check packages/core/src/
+        run: ruff check packages/core/src/ --line-length 100
 
       - name: Run Black (check)
         run: black --check packages/core/src/
@@ -121,7 +121,8 @@ jobs:
       - name: Install and build all
         run: |
           npm ci
-          npm run build
+          npm install -g pnpm
+          pnpm run build
           python -m pip install --upgrade pip
           pip install build
           cd packages/core && python -m build
