@@ -1,0 +1,17 @@
+{
+  "name": "@ato/core",
+  "version": "0.1.0",
+  "description": "Agent Team Orchestrator - Core Python package wrapper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install-python": "pip install -e .",
+    "test": "pytest",
+    "format": "black src/",
+    "lint": "ruff check src/",
+    "clean": "rm -rf __pycache__ *.pyc dist build *.egg-info"
+  },
+  "keywords": ["agent", "langgraph", "ai", "orchestration", "python"],
+  "author": "ATO Contributors",
+  "license": "MIT"
+}

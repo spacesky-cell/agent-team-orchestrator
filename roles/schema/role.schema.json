@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ATO Role Definition",
+  "description": "Schema for Agent Team Orchestrator role definitions",
+  "type": "object",
+  "required": ["id", "name", "description", "expertise", "tools", "system_prompt", "deliverables"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the role (lowercase, hyphen-separated)",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the role"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the role's responsibilities"
+    },
+    "expertise": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of specialized skills and expertise areas",
+      "minItems": 1
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of available tools this role can use",
+      "minItems": 1
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "System prompt template. Supports {{context}} placeholder for dynamic context injection."
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["format", "description"],
+        "properties": {
+          "format": {
+            "type": "string",
+            "description": "Output format (e.g., markdown, openapi, json, code)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the expected deliverable"
+          }
+        }
+      },
+      "description": "List of expected output formats and descriptions",
+      "minItems": 1
+    },
+    "model_preferences": {
+      "type": "object",
+      "description": "Optional model configuration overrides for this role",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "preferred_provider": {
+          "type": "string",
+          "enum": ["anthropic", "openai", "ollama"]
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
