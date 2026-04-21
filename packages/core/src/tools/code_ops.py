@@ -501,7 +501,7 @@ class RunTestsTool(BaseTool):
 
             return f"Running {framework}:\n" + "\n".join(output)
         except subprocess.TimeoutExpired:
-            return f"Error: Tests timed out after 120 seconds"
+            return "Error: Tests timed out after 120 seconds"
         except Exception as e:
             return f"Error running tests: {str(e)}"
 

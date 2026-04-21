@@ -1,7 +1,6 @@
 """Task decomposition prompts for supervisor agent."""
 
 import uuid
-from typing import Self
 
 from pydantic import BaseModel, Field
 

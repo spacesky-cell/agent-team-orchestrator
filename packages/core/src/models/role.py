@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError, validate
 from pydantic import BaseModel, Field
 
 

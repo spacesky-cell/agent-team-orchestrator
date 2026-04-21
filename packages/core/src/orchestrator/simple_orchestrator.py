@@ -1,19 +1,17 @@
 """Simple sequential orchestrator for MVP."""
 
-import json
 import sys
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import JsonOutputParser
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from ..models.llm_provider import get_llm_provider, LLMConfig
-from ..models.role import Role, RoleLoader
+from ..models.llm_provider import LLMConfig, get_llm_provider
+from ..models.role import RoleLoader
 from ..models.task import Subtask, TaskDecomposition, TaskResult
 from ..prompts.task_decompose import TaskDecomposer, TaskDecompositionResult
 

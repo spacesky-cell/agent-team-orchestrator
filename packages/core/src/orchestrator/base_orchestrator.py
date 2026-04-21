@@ -252,8 +252,8 @@ Please provide your output according to your deliverables.
 """
 
             messages = [
-                __import__("langchain_core.messages", fromlist=["SystemMessage"]).SystemMessage(content=system_prompt),
-                __import__("langchain_core.messages", fromlist=["HumanMessage"]).HumanMessage(content=user_prompt),
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
             ]
 
             response = llm.invoke(messages)

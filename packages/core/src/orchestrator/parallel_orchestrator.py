@@ -1,7 +1,6 @@
 """LangGraph-based orchestrator with parallel execution support."""
 
 import copy
-from typing import Any, Literal
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -10,8 +9,8 @@ from langgraph.graph import END, StateGraph
 from langgraph.types import Send
 
 from ..models.llm_provider import get_llm_provider
-from ..models.state import SubtaskDef, TeamState
 from ..models.role import RoleLoader
+from ..models.state import SubtaskDef, TeamState
 
 # Load environment variables
 load_dotenv()

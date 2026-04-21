@@ -50,7 +50,7 @@ include = [
 line-length = 100
 target-version = ["py310"]
 
-[tool.ruff]
+[tool.ruff.lint]
 line-length = 100
 select = ["E", "F", "I", "N", "W"]
 ignore = []

@@ -236,14 +236,11 @@ def generate_execution_report(
     lines.append(f"- **Total Subtasks:** {len(subtasks)}")
     lines.append(f"- **Completed:** {completed}")
     lines.append(f"- **Failed:** {failed}")
-    lines.append(
-        f"- **Overall Status:** "
-        + (
-            "✓ Success"
-            if failed == 0 and completed == len(subtasks)
-            else "✗ Failed" if failed > 0 else "▶ In Progress"
-        )
-    )
+    lines.append("- **Overall Status:** " + (
+        "✓ Success"
+        if failed == 0 and completed == len(subtasks)
+        else "✗ Failed" if failed > 0 else "▶ In Progress"
+    ))
 
     return "\n".join(lines)
 

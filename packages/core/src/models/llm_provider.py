@@ -40,7 +40,10 @@ class AnthropicProvider(BaseLLMProvider):
         if self._llm is None:
             api_key = self.config.api_key or os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY not set. Please set it in environment or config.")
+                raise ValueError(
+                    "ANTHROPIC_API_KEY not set. "
+                    "Please set it in environment or config."
+                )
 
             self._llm = ChatAnthropic(
                 model=self.config.model,

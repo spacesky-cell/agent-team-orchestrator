@@ -9,10 +9,10 @@ def _get_orchestrator_classes():
     """Lazy load orchestrator classes."""
     from .orchestrator import (
         BaseGraphOrchestrator,
-        SimpleOrchestrator,
         GraphOrchestrator,
         ParallelGraphOrchestrator,
         PersistentGraphOrchestrator,
+        SimpleOrchestrator,
         ToolEnabledOrchestrator,
     )
     return {

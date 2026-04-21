@@ -509,7 +509,10 @@ class TeamMemory:
                         document = results['documents'][0][i] if results['documents'] else ""
 
                         lines.append(f"### {metadata.get('file_path', doc_id)}")
-                        lines.append(f"*{metadata.get('change_type', 'change')} by {metadata.get('agent_role', 'unknown')}*")
+                        lines.append(
+                            f"*{metadata.get('change_type', 'change')} "
+                            f"by {metadata.get('agent_role', 'unknown')}*"
+                        )
                         lines.append(document[:500])
                         lines.append("")
             except Exception as e:

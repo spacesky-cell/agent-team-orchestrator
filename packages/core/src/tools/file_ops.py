@@ -1,8 +1,7 @@
 """File operation tools for agents to interact with the filesystem."""
 
-import os
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict
 
 from .base import BaseTool
 

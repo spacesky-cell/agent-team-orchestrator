@@ -291,7 +291,11 @@ You have access to tools - use them if needed to complete your task.
                     rationale=subtask.get("expected_output", ""),
                     consequences="",
                 )
-            elif subtask.get("role") in ["backend-developer", "frontend-developer", "fullstack-developer"]:
+            elif subtask.get("role") in (
+                "backend-developer",
+                "frontend-developer",
+                "fullstack-developer",
+            ):
                 import re
                 file_paths = re.findall(r'[\w/\\]+(?:\.[a-z]{2,4})', output)
                 for file_path in file_paths[:3]:

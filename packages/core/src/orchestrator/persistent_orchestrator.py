@@ -1,9 +1,7 @@
 """LangGraph orchestrator with SQLite checkpointing for persistence."""
 
-from langgraph.checkpoint.sqlite import SqliteSaver
-
-from ..models.state import SubtaskDef, TeamState
 from .base_orchestrator import BaseGraphOrchestrator
+from ..models.state import SubtaskDef, TeamState
 
 
 class PersistentGraphOrchestrator(BaseGraphOrchestrator):
