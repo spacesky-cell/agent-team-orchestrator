@@ -3,10 +3,9 @@
 import copy
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 from langgraph.types import Send
@@ -14,8 +13,8 @@ from rich.console import Console
 from rich.prompt import Confirm
 
 from ..models.llm_provider import get_llm_provider
-from ..models.state import SubtaskDef, TeamState
 from ..models.role import RoleLoader
+from ..models.state import SubtaskDef, TeamState
 
 # Load environment variables
 load_dotenv()

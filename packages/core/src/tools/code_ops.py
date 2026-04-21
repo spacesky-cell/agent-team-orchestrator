@@ -1,6 +1,5 @@
 """Code operation tools for agents to search and analyze code."""
 
-import os
 import re
 import subprocess
 from pathlib import Path
@@ -455,7 +454,11 @@ class RunTestsTool(BaseTool):
         framework = self._detect_test_framework(work_dir)
 
         if not framework:
-            return "No test framework detected. Looked for: pytest.ini, pyproject.toml (pytest), package.json (npm)"
+            return (
+                "No test framework detected. "
+                "Looked for: pytest.ini, pyproject.toml (pytest), "
+                "package.json (npm)"
+            )
 
         # Build command
         cmd = []
@@ -622,7 +625,10 @@ class GitCommitTool(BaseTool):
                     text=True,
                     timeout=10,
                 )
-                return f"[Dry run] Would commit with message:\n{message}\n\nStaged changes:\n{result.stdout}"
+                return (
+                    f"[Dry run] Would commit with message:\n"
+                    f"{message}\n\nStaged changes:\n{result.stdout}"
+                )
             except Exception as e:
                 return f"Error in dry run: {str(e)}"
 

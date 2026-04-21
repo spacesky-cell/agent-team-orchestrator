@@ -4,6 +4,9 @@ from typing import Literal
 
 
 # Valid task statuses
+
+
+# Valid task statuses
 TaskStatus = Literal["pending", "running", "completed", "failed"]
 
 
@@ -221,7 +224,7 @@ def generate_execution_report(
         if artifacts and subtask['id'] in artifacts:
             output = str(artifacts[subtask['id']])
             preview = output[:200] + "..." if len(output) > 200 else output
-            lines.append(f"- **Output Preview:**")
+            lines.append("- **Output Preview:**")
             lines.append("  ```")
             lines.append(f"  {preview}")
             lines.append("  ```")

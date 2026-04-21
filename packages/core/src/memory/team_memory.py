@@ -6,13 +6,11 @@ Supports:
 - Semantic search for context retrieval
 """
 
-import hashlib
-import json
 import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -194,10 +192,11 @@ class TeamMemory:
 
         cursor.execute(
             """
-            INSERT INTO decisions (id, title, content, agent_role, timestamp, rationale, consequences)
+            INSERT INTO decisions
+                (id, title, content, agent_role, timestamp, rationale, consequences)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (decision_id, title, content, agent_role, timestamp, rationale, consequences)
+            (decision_id, title, content, agent_role, timestamp, rationale, consequences),
         )
 
         conn.commit()
@@ -330,10 +329,11 @@ class TeamMemory:
 
         cursor.execute(
             """
-            INSERT INTO code_changes (id, file_path, change_type, description, agent_role, timestamp, snippet)
+            INSERT INTO code_changes
+                (id, file_path, change_type, description, agent_role, timestamp, snippet)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (change_id, file_path, change_type, description, agent_role, timestamp, snippet)
+            (change_id, file_path, change_type, description, agent_role, timestamp, snippet),
         )
 
         conn.commit()
@@ -534,7 +534,10 @@ class TeamMemory:
             if changes:
                 lines.append("\n### Recent Changes\n")
                 for change in changes:
-                    lines.append(f"- **{change.file_path}** ({change.change_type}): {change.description}")
+                    lines.append(
+                        f"- **{change.file_path}** "
+                        f"({change.change_type}): {change.description}"
+                    )
 
         if not lines:
             return "No previous context available."

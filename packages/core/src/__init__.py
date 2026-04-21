@@ -27,15 +27,15 @@ def _get_orchestrator_classes():
 def _get_model_classes():
     """Lazy load model classes."""
     from .models import (
-        Role,
         Deliverable,
+        LLMConfig,
+        Role,
         RoleLoader,
         Subtask,
+        SubtaskDef,
         TaskDecomposition,
         TaskResult,
         TeamState,
-        SubtaskDef,
-        LLMConfig,
         get_llm_provider,
     )
     return {
@@ -69,7 +69,7 @@ def _get_visualization_classes():
 
 def _get_memory_classes():
     """Lazy load memory classes."""
-    from .memory import TeamMemory, DecisionRecord, CodeChange
+    from .memory import CodeChange, DecisionRecord, TeamMemory
     return {
         "TeamMemory": TeamMemory,
         "DecisionRecord": DecisionRecord,
@@ -78,7 +78,7 @@ def _get_memory_classes():
 
 def _get_tool_functions():
     """Lazy load tool functions."""
-    from .tools import get_all_tools, get_file_tools, get_code_tools
+    from .tools import get_all_tools, get_code_tools, get_file_tools
     return {
         "get_all_tools": get_all_tools,
         "get_file_tools": get_file_tools,

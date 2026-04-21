@@ -1,11 +1,13 @@
 """LangGraph orchestrator with tool-calling support for real execution."""
 
 import asyncio
+from pathlib import Path
+
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from ..models.state import SubtaskDef, TeamState
-from ..tools import get_tools_for_role, get_all_tools
 from ..memory.team_memory import TeamMemory
+from ..models.state import SubtaskDef, TeamState
+from ..tools import get_all_tools, get_tools_for_role
 from .base_orchestrator import BaseGraphOrchestrator
 
 
@@ -35,8 +37,6 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             project_root: Root directory of the project.
             memory_dir: Directory for memory storage (relative to project_root).
         """
-        from pathlib import Path
-
         super().__init__(db_path)
         self._tool_registry = {t.name: t for t in get_all_tools()}
 
@@ -55,8 +55,8 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
         Returns:
             List of LangChain-compatible tools.
         """
-        from pydantic import BaseModel, create_model
         from langchain_core.tools import tool as langchain_tool
+        from pydantic import create_model
 
         langchain_tools = []
 
@@ -243,7 +243,12 @@ You have access to tools - use them if needed to complete your task.
                         else:
                             tool_result = f"Error: Unknown tool '{tool_name}'"
 
-                        console.print(f"  [dim]Result: {tool_result[:100]}...[/]" if len(tool_result) > 100 else f"  [dim]Result: {tool_result}[/]")
+                        result_preview = (
+                            f"{tool_result[:100]}..."
+                            if len(tool_result) > 100
+                            else tool_result
+                        )
+                        console.print(f"  [dim]Result: {result_preview}[/]")
 
                         messages.append(
                             ToolMessage(
@@ -256,7 +261,11 @@ You have access to tools - use them if needed to complete your task.
                     break
 
             if final_content is None:
-                final_content = response.content if hasattr(response, 'content') else "No output generated"
+                final_content = (
+                    response.content
+                    if hasattr(response, "content")
+                    else "No output generated"
+                )
 
             state["artifacts"][subtask_id] = final_content
             self._update_status(state, subtask_id, "completed")

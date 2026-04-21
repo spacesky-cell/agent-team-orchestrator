@@ -215,7 +215,7 @@ Please provide your output in the format specified in the deliverables.
                 lines.append(f"```\n{artifacts[dep_id]}\n```")
             else:
                 lines.append(f"\n### From {dep_id}")
-                lines.append(f"[Output not found - this may be an error]")
+                lines.append("[Output not found - this may be an error]")
 
         return "\n".join(lines)
 

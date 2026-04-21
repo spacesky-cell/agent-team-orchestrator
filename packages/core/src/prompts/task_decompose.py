@@ -1,8 +1,7 @@
 """Task decomposition prompts for supervisor agent."""
 
-import uuid
-
 from pydantic import BaseModel, Field
+import uuid
 
 
 # Few-shot examples for task decomposition
@@ -104,9 +103,16 @@ class TaskDecomposer:
     # Available roles for reference
     AVAILABLE_ROLES = {
         "architect": "Software Architect - system architecture, tech stack, API design",
-        "backend-developer": "Backend Developer - API implementation, business logic, unit tests",
-        "frontend-developer": "Frontend Developer - UI components, user experience, responsive design",
-        "fullstack-developer": "Fullstack Developer - end-to-end development, deployment configuration",
+        "backend-developer": (
+            "Backend Developer - API implementation, business logic, unit tests"
+        ),
+        "frontend-developer": (
+            "Frontend Developer - UI components, user experience, "
+            "responsive design"
+        ),
+        "fullstack-developer": (
+            "Fullstack Developer - end-to-end development, deployment configuration"
+        ),
         "tester": "Test Engineer - test strategy, test cases, automation",
     }
 
@@ -116,7 +122,8 @@ class TaskDecomposer:
         return f"""You are a Task Decomposition Specialist for a multi-agent team.
 
 ## Your Role
-Break down complex user tasks into smaller, manageable subtasks that can be executed by different specialized agents.
+Break down complex user tasks into smaller, manageable subtasks
+that can be executed by different specialized agents.
 
 ## Available Roles
 {cls._format_roles()}
