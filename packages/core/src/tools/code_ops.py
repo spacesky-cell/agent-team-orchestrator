@@ -7,7 +7,6 @@ from typing import Any, ClassVar, Dict, List
 
 from .base import BaseTool
 
-
 # Allowed directories for code operations
 ALLOWED_DIRS = [Path.cwd()]
 

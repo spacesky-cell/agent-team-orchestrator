@@ -5,7 +5,6 @@ from typing import Any, ClassVar, Dict
 
 from .base import BaseTool
 
-
 # Security: Limit operations to specific directories
 ALLOWED_DIRS = [
     Path.cwd(),  # Current working directory

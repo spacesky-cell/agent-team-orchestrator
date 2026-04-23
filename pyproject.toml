@@ -54,6 +54,11 @@ target-version = ["py310"]
 select = ["E", "F", "I", "N", "W"]
 ignore = []
 
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+force-single-line = false
+lines-after-imports = 2
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

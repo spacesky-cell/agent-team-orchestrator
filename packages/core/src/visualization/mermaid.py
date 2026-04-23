@@ -2,10 +2,6 @@
 
 from typing import Literal
 
-
-# Valid task statuses
-
-
 # Valid task statuses
 TaskStatus = Literal["pending", "running", "completed", "failed"]
 

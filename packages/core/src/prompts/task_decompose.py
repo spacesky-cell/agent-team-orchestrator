@@ -1,8 +1,8 @@
 """Task decomposition prompts for supervisor agent."""
 
-from pydantic import BaseModel, Field
 import uuid
 
+from pydantic import BaseModel, Field
 
 # Few-shot examples for task decomposition
 EXAMPLES = """
