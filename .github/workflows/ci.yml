@@ -120,8 +120,8 @@ jobs:
 
       - name: Install and build all
         run: |
-          npm ci
           npm install -g pnpm
+          pnpm install
           pnpm run build
           python -m pip install --upgrade pip
           pip install build

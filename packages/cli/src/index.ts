@@ -93,7 +93,7 @@ function executePythonScript(script: string, cwd?: string): any {
       if (existsSync(tempScript)) {
         unlinkSync(tempScript);
       }
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
 
@@ -106,7 +106,7 @@ function executePythonScript(script: string, cwd?: string): any {
       if (existsSync(tempScript)) {
         unlinkSync(tempScript);
       }
-    } catch (e) {
+    } catch {
       // Ignore cleanup errors
     }
     throw new Error(`Python execution failed: ${error.message}`);
@@ -134,18 +134,13 @@ async function executePythonScriptWithOutput(
       env: { ...process.env, PYTHONPATH: modulePath },
     });
 
-    let stdout = "";
-    let stderr = "";
-
     proc.stdout.on("data", (data) => {
       const text = data.toString();
-      stdout += text;
       process.stdout.write(text);
     });
 
     proc.stderr.on("data", (data) => {
       const text = data.toString();
-      stderr += text;
       process.stderr.write(chalk.dim(text));
     });
 
@@ -155,7 +150,7 @@ async function executePythonScriptWithOutput(
         if (existsSync(tempScript)) {
           unlinkSync(tempScript);
         }
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
       resolve({ exitCode: code ?? 0 });

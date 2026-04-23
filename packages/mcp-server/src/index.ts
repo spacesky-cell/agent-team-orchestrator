@@ -4,9 +4,8 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
 import { execSync } from "child_process";
-import { existsSync, mkdirSync, readFileSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import { join, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -221,7 +220,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const rootPath = resolve(projectRoot || ".");
         const modulePath = getModulePath();
-        const rolesPath = getRolesPath();
 
         // Enhanced script that uses SimpleOrchestrator for task decomposition
         const script = `
