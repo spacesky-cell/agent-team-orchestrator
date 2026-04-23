@@ -2,8 +2,8 @@
 
 from .llm_provider import LLMConfig, get_llm_provider
 from .role import Deliverable, Role, RoleLoader
-from .state import Subtask, SubtaskDef, TaskDecomposition, TeamState
-from .task import TaskResult
+from .state import SubtaskDef, TeamState
+from .task import Subtask, TaskDecomposition, TaskResult
 
 __all__ = [
     "Role",
