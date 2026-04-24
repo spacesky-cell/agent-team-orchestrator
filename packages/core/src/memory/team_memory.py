@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 try:
     import chromadb
     from chromadb.config import Settings as ChromaSettings
+
     HAS_CHROMA = True
 except ImportError:
     HAS_CHROMA = False
@@ -140,17 +141,15 @@ class TeamMemory:
                 settings=ChromaSettings(
                     anonymized_telemetry=False,
                     allow_reset=True,
-                )
+                ),
             )
 
             # Create collections
             self._decisions_collection = self._chroma_client.get_or_create_collection(
-                name="decisions",
-                metadata={"description": "Architecture decisions"}
+                name="decisions", metadata={"description": "Architecture decisions"}
             )
             self._changes_collection = self._chroma_client.get_or_create_collection(
-                name="code_changes",
-                metadata={"description": "Code change records"}
+                name="code_changes", metadata={"description": "Code change records"}
             )
         except Exception as e:
             logger.warning("Failed to initialize ChromaDB: %s", e)
@@ -208,11 +207,13 @@ class TeamMemory:
                 self._decisions_collection.add(
                     ids=[decision_id],
                     documents=[f"{title}\n\n{content}\n\n{rationale or ''}"],
-                    metadatas=[{
-                        "title": title,
-                        "agent_role": agent_role,
-                        "timestamp": timestamp,
-                    }]
+                    metadatas=[
+                        {
+                            "title": title,
+                            "agent_role": agent_role,
+                            "timestamp": timestamp,
+                        }
+                    ],
                 )
             except Exception as e:
                 logger.warning("Failed to add to ChromaDB: %s", e)
@@ -242,7 +243,7 @@ class TeamMemory:
         cursor.execute(
             "SELECT id, title, content, agent_role, timestamp, rationale, consequences "
             "FROM decisions ORDER BY timestamp DESC LIMIT ?",
-            (limit,)
+            (limit,),
         )
 
         rows = cursor.fetchall()
@@ -276,7 +277,7 @@ class TeamMemory:
         cursor.execute(
             "SELECT id, title, content, agent_role, timestamp, rationale, consequences "
             "FROM decisions WHERE agent_role = ? ORDER BY timestamp DESC",
-            (role,)
+            (role,),
         )
 
         rows = cursor.fetchall()
@@ -345,12 +346,14 @@ class TeamMemory:
                 self._changes_collection.add(
                     ids=[change_id],
                     documents=[f"{file_path}\n\n{description}\n\n{snippet or ''}"],
-                    metadatas=[{
-                        "file_path": file_path,
-                        "change_type": change_type,
-                        "agent_role": agent_role,
-                        "timestamp": timestamp,
-                    }]
+                    metadatas=[
+                        {
+                            "file_path": file_path,
+                            "change_type": change_type,
+                            "agent_role": agent_role,
+                            "timestamp": timestamp,
+                        }
+                    ],
                 )
             except Exception as e:
                 logger.warning("Failed to add to ChromaDB: %s", e)
@@ -380,7 +383,7 @@ class TeamMemory:
         cursor.execute(
             "SELECT id, file_path, change_type, description, agent_role, timestamp, snippet "
             "FROM code_changes ORDER BY timestamp DESC LIMIT ?",
-            (limit,)
+            (limit,),
         )
 
         rows = cursor.fetchall()
@@ -414,7 +417,7 @@ class TeamMemory:
         timestamp = datetime.now().isoformat()
         cursor.execute(
             "INSERT OR REPLACE INTO context (key, value, updated_at) VALUES (?, ?, ?)",
-            (key, value, timestamp)
+            (key, value, timestamp),
         )
 
         conn.commit()
@@ -482,11 +485,11 @@ class TeamMemory:
                     n_results=top_k,
                 )
 
-                if results['ids'] and results['ids'][0]:
+                if results["ids"] and results["ids"][0]:
                     lines.append("## Relevant Architecture Decisions\n")
-                    for i, doc_id in enumerate(results['ids'][0]):
-                        metadata = results['metadatas'][0][i] if results['metadatas'] else {}
-                        document = results['documents'][0][i] if results['documents'] else ""
+                    for i, doc_id in enumerate(results["ids"][0]):
+                        metadata = results["metadatas"][0][i] if results["metadatas"] else {}
+                        document = results["documents"][0][i] if results["documents"] else ""
 
                         lines.append(f"### {metadata.get('title', doc_id)}")
                         lines.append(document[:500])
@@ -502,11 +505,11 @@ class TeamMemory:
                     n_results=top_k,
                 )
 
-                if results['ids'] and results['ids'][0]:
+                if results["ids"] and results["ids"][0]:
                     lines.append("## Relevant Code Changes\n")
-                    for i, doc_id in enumerate(results['ids'][0]):
-                        metadata = results['metadatas'][0][i] if results['metadatas'] else {}
-                        document = results['documents'][0][i] if results['documents'] else ""
+                    for i, doc_id in enumerate(results["ids"][0]):
+                        metadata = results["metadatas"][0][i] if results["metadatas"] else {}
+                        document = results["documents"][0][i] if results["documents"] else ""
 
                         lines.append(f"### {metadata.get('file_path', doc_id)}")
                         lines.append(
@@ -535,8 +538,7 @@ class TeamMemory:
                 lines.append("\n### Recent Changes\n")
                 for change in changes:
                     lines.append(
-                        f"- **{change.file_path}** "
-                        f"({change.change_type}): {change.description}"
+                        f"- **{change.file_path}** " f"({change.change_type}): {change.description}"
                     )
 
         if not lines:

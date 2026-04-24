@@ -149,9 +149,7 @@ class SimpleOrchestrator:
                 error=str(e),
             )
 
-    def _execute_subtask(
-        self, subtask: Subtask, artifacts: dict[str, Any], context: str
-    ) -> Any:
+    def _execute_subtask(self, subtask: Subtask, artifacts: dict[str, Any], context: str) -> Any:
         """Execute a single subtask.
 
         Args:
@@ -233,9 +231,7 @@ Please provide your output in the format specified in the deliverables.
 
         for idx, subtask in enumerate(decomposition.subtasks, 1):
             deps = f" → {', '.join(subtask.dependencies)}" if subtask.dependencies else ""
-            console.print(
-                f"  {idx}. [cyan]{subtask.name}[/] ([yellow]{subtask.role}[/]){deps}"
-            )
+            console.print(f"  {idx}. [cyan]{subtask.name}[/] ([yellow]{subtask.role}[/]){deps}")
 
     def save_artifacts(self, artifacts: dict[str, Any], output_dir: Path | str) -> None:
         """Save task artifacts to disk.

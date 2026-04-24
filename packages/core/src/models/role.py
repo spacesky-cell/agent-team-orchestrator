@@ -86,10 +86,7 @@ class RoleLoader:
         """List all available role IDs."""
         if not self.roles_dir.exists():
             return []
-        return [
-            p.stem
-            for p in sorted(self.roles_dir.glob("*.yaml"))
-        ]
+        return [p.stem for p in sorted(self.roles_dir.glob("*.yaml"))]
 
     def load_all(self) -> dict[str, Role]:
         """Load all available roles."""

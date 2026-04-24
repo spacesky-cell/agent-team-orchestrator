@@ -37,32 +37,25 @@ class SearchCodeTool(BaseTool):
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "search_code",
         "properties": {
-            "query": {
-                "type": "string",
-                "description": "Search query (regex pattern)"
-            },
-            "path": {
-                "type": "string",
-                "default": ".",
-                "description": "Directory to search in"
-            },
+            "query": {"type": "string", "description": "Search query (regex pattern)"},
+            "path": {"type": "string", "default": ".", "description": "Directory to search in"},
             "file_pattern": {
                 "type": "string",
                 "default": "*",
-                "description": "File pattern to search (e.g., '*.py', '*.ts')"
+                "description": "File pattern to search (e.g., '*.py', '*.ts')",
             },
             "case_sensitive": {
                 "type": "boolean",
                 "default": False,
-                "description": "Case-sensitive search"
+                "description": "Case-sensitive search",
             },
             "max_results": {
                 "type": "integer",
                 "default": 50,
-                "description": "Maximum results to return"
-            }
+                "description": "Maximum results to return",
+            },
         },
-        "required": ["query"]
+        "required": ["query"],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -113,7 +106,8 @@ class SearchCodeTool(BaseTool):
         cmd = [
             "rg",
             "-n",  # Show line numbers
-            "-C", "2",  # Show 2 lines of context
+            "-C",
+            "2",  # Show 2 lines of context
             "--color=never",  # No colors
         ]
 
@@ -205,27 +199,16 @@ class ExecuteCommandTool(BaseTool):
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "command": {
-                "type": "string",
-                "description": "Command to execute"
-            },
-            "cwd": {
-                "type": "string",
-                "default": ".",
-                "description": "Working directory"
-            },
-            "timeout": {
-                "type": "integer",
-                "default": 60,
-                "description": "Timeout in seconds"
-            },
+            "command": {"type": "string", "description": "Command to execute"},
+            "cwd": {"type": "string", "default": ".", "description": "Working directory"},
+            "timeout": {"type": "integer", "default": 60, "description": "Timeout in seconds"},
             "safe_mode": {
                 "type": "boolean",
                 "default": True,
-                "description": "Enable safe mode (blocks dangerous commands)"
-            }
+                "description": "Enable safe mode (blocks dangerous commands)",
+            },
         },
-        "required": ["command"]
+        "required": ["command"],
     }
 
     # Blocked commands for safety
@@ -273,6 +256,7 @@ class ExecuteCommandTool(BaseTool):
         try:
             # Run command in asyncio thread pool for non-blocking execution
             import asyncio
+
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
@@ -283,7 +267,7 @@ class ExecuteCommandTool(BaseTool):
                     text=True,
                     cwd=work_dir,
                     timeout=timeout,
-                )
+                ),
             )
 
             output = []
@@ -314,13 +298,8 @@ class AnalyzeFileTool(BaseTool):
     )
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "Path to file to analyze"
-            }
-        },
-        "required": ["path"]
+        "properties": {"path": {"type": "string", "description": "Path to file to analyze"}},
+        "required": ["path"],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -404,8 +383,7 @@ class RunTestsTool(BaseTool):
 
     name: ClassVar[str] = "run_tests"
     description: ClassVar[str] = (
-        "Run the project's test suite. "
-        "Automatically detects pytest, unittest, or npm test."
+        "Run the project's test suite. " "Automatically detects pytest, unittest, or npm test."
     )
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
@@ -413,19 +391,16 @@ class RunTestsTool(BaseTool):
             "path": {
                 "type": "string",
                 "default": ".",
-                "description": "Project directory to run tests in"
+                "description": "Project directory to run tests in",
             },
-            "test_path": {
-                "type": "string",
-                "description": "Specific test file or pattern to run"
-            },
+            "test_path": {"type": "string", "description": "Specific test file or pattern to run"},
             "verbose": {
                 "type": "boolean",
                 "default": False,
-                "description": "Enable verbose output"
-            }
+                "description": "Enable verbose output",
+            },
         },
-        "required": []
+        "required": [],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -481,6 +456,7 @@ class RunTestsTool(BaseTool):
 
         try:
             import asyncio
+
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
@@ -490,7 +466,7 @@ class RunTestsTool(BaseTool):
                     text=True,
                     cwd=work_dir,
                     timeout=120,  # Longer timeout for tests
-                )
+                ),
             )
 
             output = []
@@ -515,6 +491,7 @@ class RunTestsTool(BaseTool):
         if (path / "pyproject.toml").exists():
             try:
                 import tomli
+
                 with open(path / "pyproject.toml", "rb") as f:
                     config = tomli.load(f)
                     if "tool" in config and "pytest" in config["tool"]:
@@ -541,6 +518,7 @@ class RunTestsTool(BaseTool):
         if (path / "package.json").exists():
             try:
                 import json
+
                 with open(path / "package.json") as f:
                     pkg = json.load(f)
                     if "scripts" in pkg and "test" in pkg["scripts"]:
@@ -559,23 +537,19 @@ class GitCommitTool(BaseTool):
 
     name: ClassVar[str] = "git_commit"
     description: ClassVar[str] = (
-        "Create a git commit with the current changes. "
-        "Requires staging files before use."
+        "Create a git commit with the current changes. " "Requires staging files before use."
     )
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "message": {
-                "type": "string",
-                "description": "Commit message"
-            },
+            "message": {"type": "string", "description": "Commit message"},
             "dry_run": {
                 "type": "boolean",
                 "default": False,
-                "description": "Only show what would be committed, don't actually commit"
-            }
+                "description": "Only show what would be committed, don't actually commit",
+            },
         },
-        "required": ["message"]
+        "required": ["message"],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -634,6 +608,7 @@ class GitCommitTool(BaseTool):
         # Create commit
         try:
             import asyncio
+
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
@@ -642,7 +617,7 @@ class GitCommitTool(BaseTool):
                     capture_output=True,
                     text=True,
                     timeout=10,
-                )
+                ),
             )
 
             if result.returncode == 0:

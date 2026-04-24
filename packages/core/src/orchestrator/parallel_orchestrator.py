@@ -112,18 +112,16 @@ class ParallelGraphOrchestrator:
             List of Send objects for parallel execution, or "merge_results".
         """
         # Check if all subtasks are completed or failed
-        all_done = all(
-            st["status"] in ["completed", "failed"] for st in state["subtasks"]
-        )
+        all_done = all(st["status"] in ["completed", "failed"] for st in state["subtasks"])
 
         if all_done:
             return "merge_results"
 
         # Find ready subtasks (not running yet)
         ready_subtasks = [
-            st for st in state["subtasks"]
-            if st["status"] == "pending"
-            and self._deps_satisfied(state, st)
+            st
+            for st in state["subtasks"]
+            if st["status"] == "pending" and self._deps_satisfied(state, st)
         ]
 
         if not ready_subtasks:
@@ -204,9 +202,7 @@ Please provide your output according to your deliverables.
 
             # Add completion message
             state["messages"].append(
-                AIMessage(
-                    content=f"✓ Agent '{role.name}' completed: {subtask['name']}"
-                )
+                AIMessage(content=f"✓ Agent '{role.name}' completed: {subtask['name']}")
             )
 
         except Exception as e:
@@ -214,9 +210,7 @@ Please provide your output according to your deliverables.
             state["artifacts"][subtask_id] = f"Error: {str(e)}"
             self._update_status(state, subtask_id, "failed")
             state["messages"].append(
-                AIMessage(
-                    content=f"✗ Agent failed on '{subtask['name']}': {str(e)}"
-                )
+                AIMessage(content=f"✗ Agent failed on '{subtask['name']}': {str(e)}")
             )
 
         return state
@@ -231,9 +225,7 @@ Please provide your output according to your deliverables.
             Final team state.
         """
         state["status"] = "completed"
-        state["messages"].append(
-            AIMessage(content="All tasks completed successfully.")
-        )
+        state["messages"].append(AIMessage(content="All tasks completed successfully."))
         return state
 
     def _find_ready_subtasks(self, state: TeamState) -> list[SubtaskDef]:
@@ -308,9 +300,7 @@ Please provide your output according to your deliverables.
 
         return "\n".join(lines)
 
-    def create_initial_state(
-        self, task_id: str, subtasks: list[SubtaskDef]
-    ) -> TeamState:
+    def create_initial_state(self, task_id: str, subtasks: list[SubtaskDef]) -> TeamState:
         """Create initial state for execution.
 
         Args:

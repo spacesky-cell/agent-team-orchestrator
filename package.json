@@ -24,8 +24,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@vitest/coverage-v8": "^1.0.0",
     "eslint": "^9.0.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

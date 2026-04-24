@@ -8,10 +8,10 @@ TaskStatus = Literal["pending", "running", "completed", "failed"]
 
 # Color mapping for statuses
 STATUS_COLORS = {
-    "pending": "#9CA3AF",    # Gray-purple
-    "running": "#3B82F6",    # Blue
-    "completed": "#10B981",   # Green
-    "failed": "#EF4444",      # Red
+    "pending": "#9CA3AF",  # Gray-purple
+    "running": "#3B82F6",  # Blue
+    "completed": "#10B981",  # Green
+    "failed": "#EF4444",  # Red
 }
 
 # Node style mapping
@@ -217,8 +217,8 @@ def generate_execution_report(
 
         lines.append(f"- **Expected Output:** {subtask.get('expected_output', '')}")
 
-        if artifacts and subtask['id'] in artifacts:
-            output = str(artifacts[subtask['id']])
+        if artifacts and subtask["id"] in artifacts:
+            output = str(artifacts[subtask["id"]])
             preview = output[:200] + "..." if len(output) > 200 else output
             lines.append("- **Output Preview:**")
             lines.append("  ```")
@@ -235,11 +235,14 @@ def generate_execution_report(
     lines.append(f"- **Total Subtasks:** {len(subtasks)}")
     lines.append(f"- **Completed:** {completed}")
     lines.append(f"- **Failed:** {failed}")
-    lines.append("- **Overall Status:** " + (
-        "✓ Success"
-        if failed == 0 and completed == len(subtasks)
-        else "✗ Failed" if failed > 0 else "▶ In Progress"
-    ))
+    lines.append(
+        "- **Overall Status:** "
+        + (
+            "✓ Success"
+            if failed == 0 and completed == len(subtasks)
+            else "✗ Failed" if failed > 0 else "▶ In Progress"
+        )
+    )
 
     return "\n".join(lines)
 

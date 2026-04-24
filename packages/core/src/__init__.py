@@ -5,6 +5,7 @@ __version__ = "0.1.0"
 # Lazy imports - these are only loaded when actually used
 # This prevents circular import issues and reduces initial load time
 
+
 def _get_orchestrator_classes():
     """Lazy load orchestrator classes."""
     from .orchestrator import (
@@ -15,6 +16,7 @@ def _get_orchestrator_classes():
         SimpleOrchestrator,
         ToolEnabledOrchestrator,
     )
+
     return {
         "BaseGraphOrchestrator": BaseGraphOrchestrator,
         "SimpleOrchestrator": SimpleOrchestrator,
@@ -23,6 +25,7 @@ def _get_orchestrator_classes():
         "PersistentGraphOrchestrator": PersistentGraphOrchestrator,
         "ToolEnabledOrchestrator": ToolEnabledOrchestrator,
     }
+
 
 def _get_model_classes():
     """Lazy load model classes."""
@@ -38,6 +41,7 @@ def _get_model_classes():
         TeamState,
         get_llm_provider,
     )
+
     return {
         "Role": Role,
         "Deliverable": Deliverable,
@@ -51,39 +55,48 @@ def _get_model_classes():
         "get_llm_provider": get_llm_provider,
     }
 
+
 def _get_prompt_classes():
     """Lazy load prompt classes."""
     from .prompts import TaskDecomposer, TaskDecompositionResult
+
     return {
         "TaskDecomposer": TaskDecomposer,
         "TaskDecompositionResult": TaskDecompositionResult,
     }
 
+
 def _get_visualization_classes():
     """Lazy load visualization classes."""
     from .visualization import MermaidVisualizer, generate_execution_report
+
     return {
         "MermaidVisualizer": MermaidVisualizer,
         "generate_execution_report": generate_execution_report,
     }
 
+
 def _get_memory_classes():
     """Lazy load memory classes."""
     from .memory import CodeChange, DecisionRecord, TeamMemory
+
     return {
         "TeamMemory": TeamMemory,
         "DecisionRecord": DecisionRecord,
         "CodeChange": CodeChange,
     }
 
+
 def _get_tool_functions():
     """Lazy load tool functions."""
     from .tools import get_all_tools, get_code_tools, get_file_tools
+
     return {
         "get_all_tools": get_all_tools,
         "get_file_tools": get_file_tools,
         "get_code_tools": get_code_tools,
     }
+
 
 # Create a module-like accessor
 class _LazyModule:
@@ -91,13 +104,19 @@ class _LazyModule:
 
     def __getattr__(self, name: str):
         # Try each category
-        for getter in [_get_orchestrator_classes, _get_model_classes,
-                      _get_prompt_classes, _get_visualization_classes,
-                      _get_memory_classes, _get_tool_functions]:
+        for getter in [
+            _get_orchestrator_classes,
+            _get_model_classes,
+            _get_prompt_classes,
+            _get_visualization_classes,
+            _get_memory_classes,
+            _get_tool_functions,
+        ]:
             items = getter()
             if name in items:
                 return items[name]
         raise AttributeError(f"module 'src' has no attribute '{name}'")
+
 
 # Create the lazy accessor
 _lazy = _LazyModule()

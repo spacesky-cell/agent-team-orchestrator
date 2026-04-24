@@ -80,9 +80,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
                 fields[field_name] = (field_type, field_info.get("description", ""))
 
             args_model = create_model(
-                f"{tool.name}Args",
-                __config__=type("Config", (), {"extra": "forbid"}),
-                **fields
+                f"{tool.name}Args", __config__=type("Config", (), {"extra": "forbid"}), **fields
             )
 
             @langchain_tool(args_schema=args_model)
@@ -129,9 +127,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
         existing = self.check_existing_task(thread_id)
 
         if existing and resume:
-            console.print(
-                f"[yellow]Found existing checkpoint for task: {thread_id}[/]"
-            )
+            console.print(f"[yellow]Found existing checkpoint for task: {thread_id}[/]")
             should_resume = Confirm.ask(
                 "Resume from checkpoint?",
                 default=True,
@@ -152,19 +148,19 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
 
         return final_state
 
-    def _show_relevant_context_from_memory(
-        self, task_id: str, subtasks: list[SubtaskDef]
-    ) -> None:
+    def _show_relevant_context_from_memory(self, task_id: str, subtasks: list[SubtaskDef]) -> None:
         """Show relevant context from team memory before starting task."""
         from rich.console import Console
 
         console = Console()
 
         query = f"Task: {task_id}\n"
-        query += "\n".join([
-            f"- {st.get('name', st['id'])}: {st.get('expected_output', '')[:100]}"
-            for st in subtasks[:3]
-        ])
+        query += "\n".join(
+            [
+                f"- {st.get('name', st['id'])}: {st.get('expected_output', '')[:100]}"
+                for st in subtasks[:3]
+            ]
+        )
 
         relevant = self.memory.retrieve_relevant_context(query, top_k=5)
 
@@ -225,7 +221,7 @@ You have access to tools - use them if needed to complete your task.
 
                 response = llm_with_tools.invoke(messages)
 
-                if hasattr(response, 'tool_calls') and response.tool_calls:
+                if hasattr(response, "tool_calls") and response.tool_calls:
                     messages.append(response)
 
                     for tool_call in response.tool_calls:
@@ -244,9 +240,7 @@ You have access to tools - use them if needed to complete your task.
                             tool_result = f"Error: Unknown tool '{tool_name}'"
 
                         result_preview = (
-                            f"{tool_result[:100]}..."
-                            if len(tool_result) > 100
-                            else tool_result
+                            f"{tool_result[:100]}..." if len(tool_result) > 100 else tool_result
                         )
                         console.print(f"  [dim]Result: {result_preview}[/]")
 
@@ -262,9 +256,7 @@ You have access to tools - use them if needed to complete your task.
 
             if final_content is None:
                 final_content = (
-                    response.content
-                    if hasattr(response, "content")
-                    else "No output generated"
+                    response.content if hasattr(response, "content") else "No output generated"
                 )
 
             state["artifacts"][subtask_id] = final_content
@@ -289,6 +281,7 @@ You have access to tools - use them if needed to complete your task.
     def _record_to_memory(self, subtask: SubtaskDef, role, output: str) -> None:
         """Record subtask output to team memory."""
         from rich.console import Console
+
         console = Console()
 
         try:
@@ -306,7 +299,8 @@ You have access to tools - use them if needed to complete your task.
                 "fullstack-developer",
             ):
                 import re
-                file_paths = re.findall(r'[\w/\\]+(?:\.[a-z]{2,4})', output)
+
+                file_paths = re.findall(r"[\w/\\]+(?:\.[a-z]{2,4})", output)
                 for file_path in file_paths[:3]:
                     self.memory.record_code_change(
                         file_path=file_path,

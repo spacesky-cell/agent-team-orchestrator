@@ -209,9 +209,7 @@ Please provide your output in the format specified in your deliverables.
             Updated team state with merged results.
         """
         state["status"] = "completed"
-        state["messages"].append(
-            AIMessage(content="All tasks completed. Results merged.")
-        )
+        state["messages"].append(AIMessage(content="All tasks completed. Results merged."))
         return state
 
     def _find_ready_subtasks(self, state: TeamState) -> list[SubtaskDef]:
@@ -232,8 +230,7 @@ Please provide your output in the format specified in your deliverables.
 
             # Check if all dependencies are completed
             deps_satisfied = all(
-                self._is_subtask_completed(state, dep_id)
-                for dep_id in subtask["dependencies"]
+                self._is_subtask_completed(state, dep_id) for dep_id in subtask["dependencies"]
             )
 
             if deps_satisfied:
@@ -291,9 +288,7 @@ Please provide your output in the format specified in your deliverables.
 
         return "\n".join(lines)
 
-    def create_initial_state(
-        self, task_id: str, subtasks: list[SubtaskDef]
-    ) -> TeamState:
+    def create_initial_state(self, task_id: str, subtasks: list[SubtaskDef]) -> TeamState:
         """Create initial state for the graph.
 
         Args:

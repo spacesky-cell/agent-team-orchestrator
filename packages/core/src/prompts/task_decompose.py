@@ -103,12 +103,9 @@ class TaskDecomposer:
     # Available roles for reference
     AVAILABLE_ROLES = {
         "architect": "Software Architect - system architecture, tech stack, API design",
-        "backend-developer": (
-            "Backend Developer - API implementation, business logic, unit tests"
-        ),
+        "backend-developer": ("Backend Developer - API implementation, business logic, unit tests"),
         "frontend-developer": (
-            "Frontend Developer - UI components, user experience, "
-            "responsive design"
+            "Frontend Developer - UI components, user experience, " "responsive design"
         ),
         "fullstack-developer": (
             "Fullstack Developer - end-to-end development, deployment configuration"

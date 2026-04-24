@@ -153,9 +153,7 @@ class BaseGraphOrchestrator:
         existing = self.check_existing_task(thread_id)
 
         if existing and resume:
-            console.print(
-                f"[yellow]Found existing checkpoint for task: {thread_id}[/]"
-            )
+            console.print(f"[yellow]Found existing checkpoint for task: {thread_id}[/]")
             should_resume = Confirm.ask(
                 "Resume from checkpoint?",
                 default=True,
@@ -197,15 +195,14 @@ class BaseGraphOrchestrator:
 
     def _supervisor_router(self, state: TeamState) -> list[Send] | str:
         """Router for parallel execution."""
-        all_done = all(
-            st["status"] in ["completed", "failed"] for st in state["subtasks"]
-        )
+        all_done = all(st["status"] in ["completed", "failed"] for st in state["subtasks"])
 
         if all_done:
             return "merge_results"
 
         ready = [
-            st for st in state["subtasks"]
+            st
+            for st in state["subtasks"]
             if st["status"] == "pending" and self._deps_satisfied(state, st)
         ]
 
@@ -320,9 +317,7 @@ Please provide your output according to your deliverables.
 
         return "\n".join(lines)
 
-    def create_initial_state(
-        self, task_id: str, subtasks: list[SubtaskDef]
-    ) -> TeamState:
+    def create_initial_state(self, task_id: str, subtasks: list[SubtaskDef]) -> TeamState:
         """Create initial state."""
         return {
             "task_id": task_id,

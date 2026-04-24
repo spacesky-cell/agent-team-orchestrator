@@ -41,8 +41,7 @@ class AnthropicProvider(BaseLLMProvider):
             api_key = self.config.api_key or os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
                 raise ValueError(
-                    "ANTHROPIC_API_KEY not set. "
-                    "Please set it in environment or config."
+                    "ANTHROPIC_API_KEY not set. " "Please set it in environment or config."
                 )
 
             self._llm = ChatAnthropic(
@@ -82,7 +81,9 @@ class OllamaProvider(BaseLLMProvider):
     def get_llm(self):
         if self._llm is None:
             # Ollama uses OpenAI-compatible API
-            base_url = self.config.base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+            base_url = self.config.base_url or os.getenv(
+                "OLLAMA_BASE_URL", "http://localhost:11434/v1"
+            )
 
             self._llm = ChatOpenAI(
                 model=self.config.model,

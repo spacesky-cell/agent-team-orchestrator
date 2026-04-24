@@ -48,25 +48,18 @@ class ReadFileTool(BaseTool):
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "path": {
-                "type": "string",
-                "description": "Path to the file to read"
-            },
-            "encoding": {
-                "type": "string",
-                "default": "utf-8",
-                "description": "File encoding"
-            },
+            "path": {"type": "string", "description": "Path to the file to read"},
+            "encoding": {"type": "string", "default": "utf-8", "description": "File encoding"},
             "start_line": {
                 "type": "integer",
-                "description": "Starting line number (1-indexed, optional)"
+                "description": "Starting line number (1-indexed, optional)",
             },
             "end_line": {
                 "type": "integer",
-                "description": "Ending line number (1-indexed, optional)"
-            }
+                "description": "Ending line number (1-indexed, optional)",
+            },
         },
-        "required": ["path"]
+        "required": ["path"],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -139,27 +132,17 @@ class WriteFileTool(BaseTool):
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
         "properties": {
-            "path": {
-                "type": "string",
-                "description": "Path to the file to write"
-            },
-            "content": {
-                "type": "string",
-                "description": "Content to write to the file"
-            },
-            "encoding": {
-                "type": "string",
-                "default": "utf-8",
-                "description": "File encoding"
-            },
+            "path": {"type": "string", "description": "Path to the file to write"},
+            "content": {"type": "string", "description": "Content to write to the file"},
+            "encoding": {"type": "string", "default": "utf-8", "description": "File encoding"},
             "mode": {
                 "type": "string",
                 "enum": ["write", "append"],
                 "default": "write",
-                "description": "Write mode: 'write' to overwrite, 'append' to add to end"
-            }
+                "description": "Write mode: 'write' to overwrite, 'append' to add to end",
+            },
         },
-        "required": ["path", "content"]
+        "required": ["path", "content"],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -217,19 +200,12 @@ class ListDirectoryTool(BaseTool):
             "path": {
                 "type": "string",
                 "default": ".",
-                "description": "Path to the directory to list"
+                "description": "Path to the directory to list",
             },
-            "recursive": {
-                "type": "boolean",
-                "default": False,
-                "description": "List recursively"
-            },
-            "pattern": {
-                "type": "string",
-                "description": "Filter by glob pattern (e.g., '*.py')"
-            }
+            "recursive": {"type": "boolean", "default": False, "description": "List recursively"},
+            "pattern": {"type": "string", "description": "Filter by glob pattern (e.g., '*.py')"},
         },
-        "required": []
+        "required": [],
     }
 
     async def execute(self, **kwargs) -> str:
@@ -296,13 +272,8 @@ class DeleteFileTool(BaseTool):
     )
     parameters: ClassVar[Dict[str, Any]] = {
         "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "Path to the file to delete"
-            }
-        },
-        "required": ["path"]
+        "properties": {"path": {"type": "string", "description": "Path to the file to delete"}},
+        "required": ["path"],
     }
 
     async def execute(self, **kwargs) -> str:
