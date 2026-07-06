@@ -14,17 +14,24 @@ ALLOWED_DIRS = [
 MAX_FILE_SIZE = 1024 * 1024
 
 
-def _is_path_allowed(path: Path) -> bool:
+def _normalize_allowed_dirs(allowed_dirs: list[Path | str] | None = None) -> list[Path]:
+    """Return resolved directories that tools may access."""
+    dirs = allowed_dirs or ALLOWED_DIRS
+    return [Path(directory).resolve() for directory in dirs]
+
+
+def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -> bool:
     """Check if a path is within allowed directories.
 
     Args:
         path: Path to check.
+        allowed_dirs: Optional directories to allow instead of process cwd.
 
     Returns:
         True if path is within allowed directories.
     """
     path = path.resolve()
-    for allowed_dir in ALLOWED_DIRS:
+    for allowed_dir in _normalize_allowed_dirs(allowed_dirs):
         try:
             path.relative_to(allowed_dir)
             return True
@@ -62,6 +69,9 @@ class ReadFileTool(BaseTool):
         "required": ["path"],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Read file content.
 
@@ -82,7 +92,7 @@ class ReadFileTool(BaseTool):
         file_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(file_path):
+        if not _is_path_allowed(file_path, self.allowed_dirs):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         # Check existence
@@ -145,6 +155,9 @@ class WriteFileTool(BaseTool):
         "required": ["path", "content"],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Write content to file.
 
@@ -165,7 +178,7 @@ class WriteFileTool(BaseTool):
         file_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(file_path):
+        if not _is_path_allowed(file_path, self.allowed_dirs):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         # Create parent directories if needed
@@ -208,6 +221,9 @@ class ListDirectoryTool(BaseTool):
         "required": [],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """List directory contents.
 
@@ -226,7 +242,7 @@ class ListDirectoryTool(BaseTool):
         dir_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(dir_path):
+        if not _is_path_allowed(dir_path, self.allowed_dirs):
             return f"Error: Access denied - {dir_path} is outside allowed directories"
 
         if not dir_path.exists():
@@ -276,6 +292,9 @@ class DeleteFileTool(BaseTool):
         "required": ["path"],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Delete a file.
 
@@ -289,7 +308,7 @@ class DeleteFileTool(BaseTool):
         file_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(file_path):
+        if not _is_path_allowed(file_path, self.allowed_dirs):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         if not file_path.exists():
@@ -306,15 +325,15 @@ class DeleteFileTool(BaseTool):
 
 
 # Factory function
-def get_file_tools() -> list[BaseTool]:
+def get_file_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
     """Get all file operation tools.
 
     Returns:
         List of file tool instances.
     """
     return [
-        ReadFileTool(),
-        WriteFileTool(),
-        ListDirectoryTool(),
-        DeleteFileTool(),
+        ReadFileTool(allowed_dirs=allowed_dirs),
+        WriteFileTool(allowed_dirs=allowed_dirs),
+        ListDirectoryTool(allowed_dirs=allowed_dirs),
+        DeleteFileTool(allowed_dirs=allowed_dirs),
     ]

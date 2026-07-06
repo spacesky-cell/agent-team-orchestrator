@@ -207,6 +207,7 @@ class BaseGraphOrchestrator:
         ]
 
         if not ready:
+            self._mark_blocked_subtasks_failed(state)
             return "merge_results"
 
         sends = []
@@ -271,8 +272,22 @@ Please provide your output according to your deliverables.
 
     def _merge_results_node(self, state: TeamState) -> TeamState:
         """Merge all results."""
-        state["status"] = "completed"
-        state["messages"].append(AIMessage(content="All tasks completed."))
+        failed = sum(1 for st in state["subtasks"] if st["status"] == "failed")
+        completed = sum(1 for st in state["subtasks"] if st["status"] == "completed")
+        total = len(state["subtasks"])
+
+        if failed:
+            state["status"] = "failed"
+            state["messages"].append(
+                AIMessage(content=f"Task finished with {failed} failed subtask(s).")
+            )
+        elif completed == total:
+            state["status"] = "completed"
+            state["messages"].append(AIMessage(content="All tasks completed."))
+        else:
+            self._mark_blocked_subtasks_failed(state)
+            state["status"] = "failed"
+            state["messages"].append(AIMessage(content="Task blocked by unsatisfied dependencies."))
         return state
 
     # ============ Helper Methods ============
@@ -299,6 +314,26 @@ Please provide your output according to your deliverables.
             if st["id"] == subtask_id:
                 st["status"] = status
                 break
+
+    def _mark_blocked_subtasks_failed(self, state: TeamState) -> None:
+        """Fail pending subtasks that cannot run because dependencies are unsatisfied."""
+        for st in state["subtasks"]:
+            if st["status"] != "pending":
+                continue
+
+            missing_or_failed = []
+            for dep_id in st["dependencies"]:
+                dep = next((item for item in state["subtasks"] if item["id"] == dep_id), None)
+                if dep is None:
+                    missing_or_failed.append(f"{dep_id} (missing)")
+                elif dep["status"] != "completed":
+                    missing_or_failed.append(f"{dep_id} ({dep['status']})")
+
+            if missing_or_failed:
+                reason = "Blocked: unsatisfied dependencies: " + ", ".join(missing_or_failed)
+                st["status"] = "failed"
+                state["artifacts"][st["id"]] = reason
+                state["status"] = "failed"
 
     def _build_context(self, state: TeamState, subtask: SubtaskDef) -> str:
         """Build context from dependencies.

@@ -11,10 +11,16 @@ from .base import BaseTool
 ALLOWED_DIRS = [Path.cwd()]
 
 
-def _is_path_allowed(path: Path) -> bool:
+def _normalize_allowed_dirs(allowed_dirs: list[Path | str] | None = None) -> list[Path]:
+    """Return resolved directories that tools may access."""
+    dirs = allowed_dirs or ALLOWED_DIRS
+    return [Path(directory).resolve() for directory in dirs]
+
+
+def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -> bool:
     """Check if path is within allowed directories."""
     path = path.resolve()
-    for allowed_dir in ALLOWED_DIRS:
+    for allowed_dir in _normalize_allowed_dirs(allowed_dirs):
         try:
             path.relative_to(allowed_dir)
             return True
@@ -35,7 +41,7 @@ class SearchCodeTool(BaseTool):
         "Use this to find specific functions, classes, or code patterns."
     )
     parameters: ClassVar[Dict[str, Any]] = {
-        "type": "search_code",
+        "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Search query (regex pattern)"},
             "path": {"type": "string", "default": ".", "description": "Directory to search in"},
@@ -57,6 +63,9 @@ class SearchCodeTool(BaseTool):
         },
         "required": ["query"],
     }
+
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
     async def execute(self, **kwargs) -> str:
         """Search for patterns in code.
@@ -80,7 +89,7 @@ class SearchCodeTool(BaseTool):
         search_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(search_path):
+        if not _is_path_allowed(search_path, self.allowed_dirs):
             return f"Error: Access denied - {search_path} is outside allowed directories"
 
         # Try ripgrep first (faster)
@@ -224,6 +233,9 @@ class ExecuteCommandTool(BaseTool):
         r"wget.*\|\s*bash",
     ]
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Execute a shell command.
 
@@ -250,7 +262,7 @@ class ExecuteCommandTool(BaseTool):
         work_dir = Path(cwd).resolve()
 
         # Security check
-        if not _is_path_allowed(work_dir):
+        if not _is_path_allowed(work_dir, self.allowed_dirs):
             return f"Error: Access denied - {work_dir} is outside allowed directories"
 
         try:
@@ -302,6 +314,9 @@ class AnalyzeFileTool(BaseTool):
         "required": ["path"],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Analyze a file.
 
@@ -315,7 +330,7 @@ class AnalyzeFileTool(BaseTool):
         file_path = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(file_path):
+        if not _is_path_allowed(file_path, self.allowed_dirs):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         if not file_path.exists():
@@ -403,6 +418,9 @@ class RunTestsTool(BaseTool):
         "required": [],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Run test suite.
 
@@ -421,7 +439,7 @@ class RunTestsTool(BaseTool):
         work_dir = Path(path).resolve()
 
         # Security check
-        if not _is_path_allowed(work_dir):
+        if not _is_path_allowed(work_dir, self.allowed_dirs):
             return f"Error: Access denied - {work_dir} is outside allowed directories"
 
         # Detect test framework
@@ -552,6 +570,9 @@ class GitCommitTool(BaseTool):
         "required": ["message"],
     }
 
+    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+        self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
+
     async def execute(self, **kwargs) -> str:
         """Create a git commit.
 
@@ -638,16 +659,16 @@ class GitCommitTool(BaseTool):
 
 
 # Factory function
-def get_code_tools() -> list[BaseTool]:
+def get_code_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
     """Get all code operation tools.
 
     Returns:
         List of code tool instances.
     """
     return [
-        SearchCodeTool(),
-        ExecuteCommandTool(),
-        AnalyzeFileTool(),
-        RunTestsTool(),
-        GitCommitTool(),
+        SearchCodeTool(allowed_dirs=allowed_dirs),
+        ExecuteCommandTool(allowed_dirs=allowed_dirs),
+        AnalyzeFileTool(allowed_dirs=allowed_dirs),
+        RunTestsTool(allowed_dirs=allowed_dirs),
+        GitCommitTool(allowed_dirs=allowed_dirs),
     ]

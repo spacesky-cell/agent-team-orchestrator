@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ato": {
+      "command": "node",
+      "args": ["packages/mcp-server/dist/index.js"],
+      "env": {
+        "LLM_PROVIDER": "claude-cli"
+      }
+    }
+  }
+}

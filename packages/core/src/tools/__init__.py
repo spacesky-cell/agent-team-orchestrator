@@ -1,5 +1,7 @@
 """Tools module for Agent Team Orchestrator."""
 
+from pathlib import Path
+
 from .base import BaseTool
 from .code_ops import (
     AnalyzeFileTool,
@@ -35,16 +37,18 @@ __all__ = [
 ]
 
 
-def get_all_tools() -> list[BaseTool]:
+def get_all_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
     """Get all available tools.
 
     Returns:
         List of all tool instances.
     """
-    return get_file_tools() + get_code_tools()
+    return get_file_tools(allowed_dirs=allowed_dirs) + get_code_tools(allowed_dirs=allowed_dirs)
 
 
-def get_tools_for_role(role_tools: list[str]) -> list[BaseTool]:
+def get_tools_for_role(
+    role_tools: list[str], allowed_dirs: list[Path | str] | None = None
+) -> list[BaseTool]:
     """Get tools available for a specific role.
 
     Args:
@@ -53,5 +57,5 @@ def get_tools_for_role(role_tools: list[str]) -> list[BaseTool]:
     Returns:
         List of tool instances available to the role.
     """
-    all_tools = {t.name: t for t in get_all_tools()}
+    all_tools = {t.name: t for t in get_all_tools(allowed_dirs=allowed_dirs)}
     return [all_tools[name] for name in role_tools if name in all_tools]

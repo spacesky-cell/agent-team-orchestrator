@@ -38,11 +38,13 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             memory_dir: Directory for memory storage (relative to project_root).
         """
         super().__init__(db_path)
-        self._tool_registry = {t.name: t for t in get_all_tools()}
+        self.project_root = Path(project_root).resolve()
+        self._allowed_dirs = [self.project_root]
+        self._tool_registry = {t.name: t for t in get_all_tools(allowed_dirs=self._allowed_dirs)}
 
         # Initialize team memory for context sharing
         self.memory = TeamMemory(
-            project_root=project_root,
+            project_root=self.project_root,
             storage_dir=memory_dir,
         )
 
@@ -56,7 +58,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             List of LangChain-compatible tools.
         """
         from langchain_core.tools import tool as langchain_tool
-        from pydantic import create_model
+        from pydantic import ConfigDict, create_model
 
         langchain_tools = []
 
@@ -80,18 +82,23 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
                 fields[field_name] = (field_type, field_info.get("description", ""))
 
             args_model = create_model(
-                f"{tool.name}Args", __config__=type("Config", (), {"extra": "forbid"}), **fields
+                f"{tool.name}Args",
+                __config__=ConfigDict(extra="forbid"),
+                **fields,
             )
 
-            @langchain_tool(args_schema=args_model)
-            def tool_func(**kwargs):
+            def make_tool_func(base_tool):
                 """Wrapper function."""
-                return asyncio.run(tool.execute(**kwargs))
+                @langchain_tool(args_schema=args_model)
+                def tool_func(**kwargs):
+                    """Wrapper function."""
+                    return asyncio.run(base_tool.execute(**kwargs))
 
-            tool_func.name = tool.name
-            tool_func.description = tool.description
+                tool_func.name = base_tool.name
+                tool_func.description = base_tool.description
+                return tool_func
 
-            langchain_tools.append(tool_func)
+            langchain_tools.append(make_tool_func(tool))
 
         return langchain_tools
 
@@ -192,7 +199,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             system_prompt = role.render_prompt(context)
 
             # Get tools available for this role
-            role_tools = get_tools_for_role(role.tools)
+            role_tools = get_tools_for_role(role.tools, allowed_dirs=self._allowed_dirs)
             langchain_tools = self._convert_to_langchain_tools(role_tools)
 
             # Bind tools to LLM

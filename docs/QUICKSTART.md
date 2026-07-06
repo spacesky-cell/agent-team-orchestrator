@@ -6,7 +6,7 @@
 
 - Python 3.10+
 - Node.js 18+
-- 一个 LLM API Key（Anthropic Claude、OpenAI 或 NVIDIA API）
+- 已登录的 Claude Code CLI，或一个 LLM API Key（Anthropic、OpenAI 或 Ollama）
 
 ## 第一步：安装
 
@@ -21,25 +21,37 @@ source .venv/bin/activate  # Linux/Mac
 # 或 .venv\Scripts\activate  # Windows
 
 # 安装 Python 依赖
-pip install -e packages/core
+python -m pip install -e packages/core[dev]
 
 # 安装 Node.js 依赖
-npm install
+pnpm install
+
+# 如果 pnpm 拦截 esbuild build script，执行一次审批
+pnpm approve-builds
 
 # 构建 TypeScript 包
-npm run build
+pnpm run build
+
+# 不调用 LLM 的本地连通性检查
+node packages/cli/dist/index.js doctor
 ```
 
-## 第二步：配置 API Key
+## 第二步：配置 LLM
 
 ```bash
 # 复制环境变量示例文件
 cp .env.example .env
 
-# 编辑 .env 文件，添加你的 API Key
+# 默认使用已登录的 Claude Code CLI，不需要 API Key
 ```
 
-### Anthropic Claude
+### 默认：复用 Claude Code CLI 登录态
+
+```bash
+LLM_PROVIDER=claude-cli
+```
+
+### Anthropic Claude 直连 API
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-xxx
@@ -49,15 +61,6 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 
 ```bash
 OPENAI_API_KEY=sk-xxx
-```
-
-### NVIDIA API（推荐用于测试）
-
-```bash
-LLM_PROVIDER=openai
-LLM_MODEL=z-ai/glm4.7
-OPENAI_API_KEY=nvapi-xxx
-OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
 ## 第三步：运行第一个任务
@@ -87,16 +90,16 @@ node packages/cli/dist/index.js run "开发一个简单的待办事项管理 API
 
 ### 方式 3：通过 MCP Server（推荐）
 
-在 Claude Code 配置文件中添加：
+仓库已包含项目级 `.mcp.json`：
 
 ```json
 {
   "mcpServers": {
     "ato": {
       "command": "node",
-      "args": ["./packages/mcp-server/dist/index.js"],
+      "args": ["packages/mcp-server/dist/index.js"],
       "env": {
-        "ANTHROPIC_API_KEY": "your-key"
+        "LLM_PROVIDER": "claude-cli"
       }
     }
   }
@@ -104,6 +107,19 @@ node packages/cli/dist/index.js run "开发一个简单的待办事项管理 API
 ```
 
 然后在 Claude Code 中调用 `create_team_task` 工具。
+
+先用 Claude Code 检查 MCP 是否连接：
+
+```bash
+claude mcp list
+claude mcp get ato
+```
+
+默认 `claude-cli` 会复用本机 Claude Code CLI 登录态。若改用直连 API，真实密钥放在 shell 环境变量或 `.env` 中，不写入 `.mcp.json`：
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-xxx
+```
 
 ## 工作原理
 

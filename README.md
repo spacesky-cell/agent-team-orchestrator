@@ -8,7 +8,7 @@ Agent Team Orchestrator (ATO) is a multi-agent collaboration orchestration syste
 
 ## Features
 
-- **Multi-LLM Provider Support**: Anthropic Claude, OpenAI, NVIDIA API, and local models (Ollama)
+- **Multi-LLM Provider Support**: Claude Code CLI, Anthropic Claude, OpenAI, and local models (Ollama)
 - **Role-Based Agents**: Pre-configured roles like architect, backend developer, tester, with custom role support
 - **Automatic Task Decomposition**: Intelligently breaks down complex tasks into executable subtasks
 - **Parallel Execution**: Multiple agents work simultaneously with dependency management
@@ -24,7 +24,7 @@ Agent Team Orchestrator (ATO) is a multi-agent collaboration orchestration syste
 
 - Python 3.10+
 - Node.js 18+
-- pnpm or npm
+- pnpm 9+
 
 ### Installation
 
@@ -39,23 +39,30 @@ source .venv/bin/activate  # Linux/Mac
 # or .venv\Scripts\activate  # Windows
 
 # Install Python dependencies
-pip install -e packages/core
+python -m pip install -e packages/core[dev]
 
 # Install Node.js dependencies
-npm install
+pnpm install
+
+# If pnpm blocks esbuild scripts, approve the build once
+pnpm approve-builds
 
 # Build TypeScript packages
-npm run build
+pnpm run build
+
+# Smoke-check local CLI/Python wiring without calling an LLM
+node packages/cli/dist/index.js doctor
 ```
 
-### Configure API Key
+### Configure LLM Access
 
 ```bash
 # Copy environment variable example file
 cp .env.example .env
 
-# Edit .env file, add your API Key
-# Anthropic: ANTHROPIC_API_KEY=your-key
+# Default: no API key required if Claude Code CLI is already logged in
+# Default: LLM_PROVIDER=claude-cli reuses your local Claude Code login
+# Anthropic direct API: ANTHROPIC_API_KEY=your-key
 # OpenAI: OPENAI_API_KEY=your-key
 # NVIDIA API: OPENAI_API_KEY=nvapi-xxx, OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
@@ -64,26 +71,39 @@ cp .env.example .env
 
 ### Method 1: Via MCP Server (Recommended)
 
-Add ATO to your Claude Code configuration:
+The repository includes a project-level `.mcp.json` for Claude Code CLI:
 
 ```json
 {
   "mcpServers": {
     "ato": {
       "command": "node",
-      "args": ["./packages/mcp-server/dist/index.js"],
+      "args": ["packages/mcp-server/dist/index.js"],
       "env": {
-        "ANTHROPIC_API_KEY": "your-key"
+        "LLM_PROVIDER": "claude-cli"
       }
     }
   }
 }
 ```
 
+The default `claude-cli` provider reuses your local authenticated Claude Code CLI. If you prefer direct API access, keep the real API key in the shell environment or `.env`; do not commit it:
+
+```bash
+ANTHROPIC_API_KEY=your-key
+```
+
+After building, verify Claude Code can see the project MCP server:
+
+```bash
+claude mcp list
+claude mcp get ato
+```
+
 Then in Claude Code, simply call:
 
 ```
-Use create_team_task tool and describe your task
+Use self_check first, then create_team_task.
 ```
 
 The system will automatically:
@@ -259,38 +279,28 @@ deliverables:
 
 ### Configure MCP Server
 
-Add ATO as an MCP Server in your Claude Code configuration:
-
-#### Method 1: Local Build
+The repository includes a project-level `.mcp.json` for Claude Code:
 
 ```json
 {
   "mcpServers": {
     "ato": {
       "command": "node",
-      "args": ["./packages/mcp-server/dist/index.js"],
+      "args": ["packages/mcp-server/dist/index.js"],
       "env": {
-        "ANTHROPIC_API_KEY": "your-key"
+        "LLM_PROVIDER": "claude-cli"
       }
     }
   }
 }
 ```
 
-#### Method 2: Using npx (requires npm publish)
+The default `claude-cli` provider reuses your local authenticated Claude Code CLI. For direct API mode, keep real API keys in your shell or `.env`, not in committed MCP config:
 
-```json
-{
-  "mcpServers": {
-    "ato": {
-      "command": "npx",
-      "args": ["@ato/mcp-server"],
-      "env": {
-        "ANTHROPIC_API_KEY": "your-key"
-      }
-    }
-  }
-}
+```bash
+ANTHROPIC_API_KEY=your-key
+claude mcp list
+claude mcp get ato
 ```
 
 ### Available MCP Tools
@@ -304,6 +314,7 @@ Add ATO as an MCP Server in your Claude Code configuration:
 | `list_incomplete_tasks` | List incomplete tasks (useful for resuming interrupted work) |
 | `query_team_memory` | Search team memory for relevant context using semantic search |
 | `get_memory_summary` | Get team memory summary |
+| `self_check` | Check Python path, role loading, and LLM environment without calling an LLM |
 
 ### MCP Usage Examples
 
@@ -358,6 +369,9 @@ Returns architecture decisions and code changes related to the query.
 ```bash
 # Show help
 ato --help
+
+# Check Python path, role loading, and LLM environment
+ato doctor
 
 # Run a task
 ato run "Design and implement a user authentication system"
@@ -428,7 +442,7 @@ context = memory.retrieve_relevant_context(
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LLM_PROVIDER` | `anthropic` | LLM provider: anthropic, openai, ollama |
+| `LLM_PROVIDER` | `claude-cli` | LLM provider: claude-cli, anthropic, openai, ollama |
 | `LLM_MODEL` | `claude-sonnet-4-20250514` | Model name |
 | `LLM_TEMPERATURE` | `0.7` | Generation temperature |
 | `LLM_MAX_TOKENS` | `4096` | Maximum tokens |
@@ -451,10 +465,13 @@ OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
 
 ```bash
 # Run tests
-cd packages/core && pytest
+python -m pytest packages/core/tests -v
 
 # Build TypeScript packages
-npm run build
+pnpm run build
+
+# Run TypeScript tests
+pnpm exec vitest run --passWithNoTests
 
 # Format Python code
 black packages/core/src/

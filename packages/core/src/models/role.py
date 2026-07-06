@@ -8,7 +8,7 @@ from typing import Optional
 
 import yaml
 from jsonschema import ValidationError, validate
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Deliverable(BaseModel):
@@ -28,6 +28,8 @@ class ModelPreferences(BaseModel):
 
 class Role(BaseModel):
     """Agent role definition."""
+
+    model_config = ConfigDict(protected_namespaces=())
 
     id: str = Field(..., description="Unique role identifier")
     name: str = Field(..., description="Display name")

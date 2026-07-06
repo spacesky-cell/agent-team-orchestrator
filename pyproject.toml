@@ -1,59 +1,21 @@
-[project]
-name = "ato-core"
-version = "0.1.0"
-description = "Agent Team Orchestrator - Core Python package with LangGraph"
-readme = "README.md"
-requires-python = ">=3.10"
-license = {text = "MIT"}
-keywords = ["agent", "langgraph", "ai", "orchestration"]
-authors = [
-    {name = "ATO Team"}
-]
-
-dependencies = [
-    "langchain>=0.3.0",
-    "langchain-anthropic>=0.3.0",
-    "langchain-openai>=0.2.0",
-    "langgraph>=0.2.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "pyyaml>=6.0.0",
-    "jsonschema>=4.0.0",
-    "python-dotenv>=1.0.0",
-    "rich>=13.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["packages/core/src"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/packages/core/src",
-    "/README.md",
-]
+# Root-level tool configuration only.
+#
+# The installable Python package source of truth is packages/core/pyproject.toml.
+# Use:
+#   python -m pip install -e packages/core[dev]
 
 [tool.black]
 line-length = 100
 target-version = ["py310"]
 
+[tool.ruff]
+line-length = 100
+
 [tool.ruff.lint]
-select = ["E", "F", "N", "W"]  # Disabled I (isort) - import order handled manually
+select = ["E", "F", "I", "N", "W"]
 ignore = []
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["packages/core/tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

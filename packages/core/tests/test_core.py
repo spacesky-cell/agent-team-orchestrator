@@ -1,11 +1,8 @@
 """Tests for Agent Team Orchestrator core package."""
 
-import os
-import sys
-import json
+import asyncio
+
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 
 class TestRoleLoader:
@@ -115,7 +112,7 @@ class TestModels:
         assert result.error is None
 
     def test_team_state_typeddict(self):
-        from src.models.state import TeamState, SubtaskDef
+        from src.models.state import TeamState
 
         state: TeamState = {
             "task_id": "task-001",
@@ -143,6 +140,64 @@ class TestModels:
         config = LLMConfig(provider="openai", model="gpt-4")
         assert config.provider == "openai"
         assert config.temperature == 0.7
+
+    def test_llm_config_default_provider_uses_claude_cli(self):
+        from src.models.llm_provider import LLMConfig
+
+        assert LLMConfig().provider == "claude-cli"
+
+
+class TestLLMProvider:
+    """Tests for LLM provider selection and adapters."""
+
+    def test_claude_cli_provider_selected_from_environment(self, monkeypatch):
+        from src.models.llm_provider import ClaudeCliProvider, get_llm_provider
+
+        monkeypatch.setenv("LLM_PROVIDER", "claude-cli")
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+        provider = get_llm_provider()
+
+        assert isinstance(provider, ClaudeCliProvider)
+
+    def test_claude_cli_chat_model_invokes_claude_print(self, monkeypatch):
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        from src.models.llm_provider import ClaudeCliChatModel
+
+        captured = {}
+
+        class Result:
+            returncode = 0
+            stdout = "hello from claude\n"
+            stderr = ""
+
+        def fake_run(args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return Result()
+
+        monkeypatch.setattr("src.models.llm_provider.shutil.which", lambda name: "claude")
+        monkeypatch.setattr("src.models.llm_provider.subprocess.run", fake_run)
+
+        llm = ClaudeCliChatModel(timeout=12)
+        response = llm.invoke(
+            [
+                SystemMessage(content="system instructions"),
+                HumanMessage(content="user task"),
+                "format instructions",
+            ]
+        )
+
+        assert response.content == "hello from claude"
+        assert captured["args"] == ["claude", "-p", "--safe-mode", "--output-format", "text"]
+        assert captured["kwargs"]["input"]
+        assert "system instructions" in captured["kwargs"]["input"]
+        assert "user task" in captured["kwargs"]["input"]
+        assert "format instructions" in captured["kwargs"]["input"]
+        assert captured["args"][4] == "text"
+        assert captured["kwargs"]["timeout"] == 12
+        assert llm.bind_tools([]) is llm
 
 
 class TestTools:
@@ -199,6 +254,48 @@ class TestTools:
             assert hasattr(tool, "parameters")
             assert hasattr(tool, "execute")
 
+    def test_file_tools_respect_explicit_project_root(self, tmp_path):
+        from src.tools.file_ops import ReadFileTool
+
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        allowed_file = allowed / "example.txt"
+        allowed_file.write_text("hello", encoding="utf-8")
+
+        denied = tmp_path / "denied"
+        denied.mkdir()
+        denied_file = denied / "secret.txt"
+        denied_file.write_text("secret", encoding="utf-8")
+
+        tool = ReadFileTool(allowed_dirs=[allowed])
+
+        allowed_result = asyncio.run(tool.execute(path=str(allowed_file)))
+        denied_result = asyncio.run(tool.execute(path=str(denied_file)))
+
+        assert "hello" in allowed_result
+        assert "Access denied" in denied_result
+
+    def test_code_tools_respect_explicit_project_root(self, tmp_path):
+        from src.tools.code_ops import ExecuteCommandTool
+
+        allowed = tmp_path / "allowed"
+        allowed.mkdir()
+        denied = tmp_path / "denied"
+        denied.mkdir()
+
+        tool = ExecuteCommandTool(allowed_dirs=[allowed])
+
+        allowed_result = asyncio.run(
+            tool.execute(command="python -c \"print('ok')\"", cwd=str(allowed))
+        )
+        denied_result = asyncio.run(
+            tool.execute(command="python -c \"print('no')\"", cwd=str(denied))
+        )
+
+        assert "ok" in allowed_result
+        assert "[exit code: 0]" in allowed_result
+        assert "Access denied" in denied_result
+
 
 class TestTaskDecomposer:
     """Tests for task decomposer prompts."""
@@ -237,6 +334,101 @@ class TestTaskDecomposer:
 
         task_id = TaskDecompositionResult.generate_task_id()
         assert task_id.startswith("task-")
+
+
+class TestGraphOrchestratorStatus:
+    """Tests for shared graph state status transitions."""
+
+    def test_merge_results_preserves_failed_subtask_status(self):
+        from src.orchestrator.base_orchestrator import BaseGraphOrchestrator
+
+        orchestrator = BaseGraphOrchestrator(db_path=":memory:")
+        state = {
+            "task_id": "task-001",
+            "subtasks": [
+                {
+                    "id": "st-1",
+                    "name": "Failed",
+                    "role": "architect",
+                    "dependencies": [],
+                    "expected_output": "Output",
+                    "status": "failed",
+                }
+            ],
+            "artifacts": {"st-1": "Error"},
+            "messages": [],
+            "status": "failed",
+            "current_subtasks": [],
+        }
+
+        final_state = orchestrator._merge_results_node(state)
+
+        assert final_state["status"] == "failed"
+
+    def test_supervisor_marks_blocked_pending_task_as_failed(self):
+        from src.orchestrator.base_orchestrator import BaseGraphOrchestrator
+
+        orchestrator = BaseGraphOrchestrator(db_path=":memory:")
+        state = {
+            "task_id": "task-001",
+            "subtasks": [
+                {
+                    "id": "st-1",
+                    "name": "Blocked",
+                    "role": "architect",
+                    "dependencies": ["missing"],
+                    "expected_output": "Output",
+                    "status": "pending",
+                }
+            ],
+            "artifacts": {},
+            "messages": [],
+            "status": "pending",
+            "current_subtasks": [],
+        }
+
+        next_node = orchestrator._supervisor_router(state)
+
+        assert next_node == "merge_results"
+        assert state["status"] == "failed"
+        assert state["artifacts"]["st-1"].startswith("Blocked:")
+
+
+class TestToolEnabledOrchestrator:
+    """Tests for tool-enabled orchestration helpers."""
+
+    def test_langchain_tool_wrappers_call_the_matching_base_tool(self, tmp_path):
+        from src.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
+        from src.tools.base import BaseTool
+
+        class EchoTool(BaseTool):
+            def __init__(self, name):
+                self.name = name
+                self.description = f"{name} description"
+                self.parameters = {
+                    "type": "object",
+                    "properties": {
+                        "value": {"type": "string", "description": "Value to echo"},
+                    },
+                    "required": ["value"],
+                }
+
+            async def execute(self, **kwargs):
+                return f"{self.name}:{kwargs['value']}"
+
+        orchestrator = ToolEnabledOrchestrator(
+            db_path=tmp_path / "checkpoints.db",
+            project_root=tmp_path,
+            memory_dir=".memory",
+        )
+
+        wrappers = orchestrator._convert_to_langchain_tools(
+            [EchoTool("first_tool"), EchoTool("second_tool")]
+        )
+        by_name = {wrapper.name: wrapper for wrapper in wrappers}
+
+        assert by_name["first_tool"].invoke({"value": "a"}) == "first_tool:a"
+        assert by_name["second_tool"].invoke({"value": "b"}) == "second_tool:b"
 
 
 class TestTeamMemory:
@@ -337,8 +529,20 @@ class TestVisualization:
         from src.visualization.mermaid import generate_mermaid_dag
 
         subtasks = [
-            {"id": "st-1", "name": "Task 1", "role": "architect", "dependencies": [], "status": "pending"},
-            {"id": "st-2", "name": "Task 2", "role": "dev", "dependencies": ["st-1"], "status": "completed"},
+            {
+                "id": "st-1",
+                "name": "Task 1",
+                "role": "architect",
+                "dependencies": [],
+                "status": "pending",
+            },
+            {
+                "id": "st-2",
+                "name": "Task 2",
+                "role": "dev",
+                "dependencies": ["st-1"],
+                "status": "completed",
+            },
         ]
         diagram = generate_mermaid_dag(subtasks)
         assert "graph TD" in diagram
@@ -349,7 +553,13 @@ class TestVisualization:
         from src.visualization.mermaid import generate_mermaid_dag
 
         subtasks = [
-            {"id": "st-1", "name": "Done", "role": "dev", "dependencies": [], "status": "completed"},
+            {
+                "id": "st-1",
+                "name": "Done",
+                "role": "dev",
+                "dependencies": [],
+                "status": "completed",
+            },
         ]
         diagram = generate_mermaid_dag(subtasks, show_status=True)
         assert "[completed]" in diagram
@@ -369,7 +579,14 @@ class TestVisualization:
         from src.visualization.mermaid import generate_execution_report
 
         subtasks = [
-            {"id": "st-1", "name": "Task 1", "role": "dev", "status": "completed", "dependencies": [], "expected_output": "output"},
+            {
+                "id": "st-1",
+                "name": "Task 1",
+                "role": "dev",
+                "status": "completed",
+                "dependencies": [],
+                "expected_output": "output",
+            },
         ]
         report = generate_execution_report("task-001", subtasks)
         assert "# Task Execution Report" in report
@@ -379,7 +596,15 @@ class TestVisualization:
     def test_mermaid_visualizer(self):
         from src.visualization.mermaid import MermaidVisualizer
 
-        subtasks = [{"id": "st-1", "name": "T1", "role": "dev", "dependencies": [], "status": "pending"}]
+        subtasks = [
+            {
+                "id": "st-1",
+                "name": "T1",
+                "role": "dev",
+                "dependencies": [],
+                "status": "pending",
+            }
+        ]
         dag = MermaidVisualizer.dag(subtasks)
         assert "graph TD" in dag
 
