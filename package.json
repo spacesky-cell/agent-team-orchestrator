@@ -1,8 +1,7 @@
 {
-  "name": "ato",
+  "name": "@spacesky-cell/agent-team-orchestrator",
   "version": "0.1.0",
   "description": "Agent Team Orchestrator - Multi-agent collaboration system powered by LangGraph",
-  "private": true,
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -23,6 +22,14 @@
   ],
   "author": "",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",
     "eslint": "^9.0.0",
