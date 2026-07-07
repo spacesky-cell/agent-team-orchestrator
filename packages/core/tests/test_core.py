@@ -199,6 +199,48 @@ class TestLLMProvider:
         assert captured["kwargs"]["timeout"] == 12
         assert llm.bind_tools([]) is llm
 
+    def test_claude_cli_chat_model_invokes_json_schema(self, monkeypatch):
+        from langchain_core.messages import HumanMessage
+
+        from src.models.llm_provider import ClaudeCliChatModel
+
+        captured = {}
+
+        class Result:
+            returncode = 0
+            stdout = (
+                '{"type":"result","subtype":"success","structured_output":'
+                '{"type":"final","content":"hello"}}'
+            )
+            stderr = ""
+
+        def fake_run(args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return Result()
+
+        monkeypatch.setattr("src.models.llm_provider.shutil.which", lambda name: "claude")
+        monkeypatch.setattr("src.models.llm_provider.subprocess.run", fake_run)
+
+        llm = ClaudeCliChatModel(timeout=12)
+        response = llm.invoke_json_schema(
+            [HumanMessage(content="return a final response")],
+            {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "content": {"type": "string"},
+                },
+                "required": ["type"],
+            },
+        )
+
+        assert response.content == '{"type":"final","content":"hello"}'
+        assert captured["args"][:5] == ["claude", "-p", "--safe-mode", "--tools", ""]
+        assert captured["args"][5:7] == ["--output-format", "json"]
+        assert "--json-schema" in captured["args"]
+        assert captured["kwargs"]["timeout"] == 12
+
 
 class TestTools:
     """Tests for tool definitions."""

@@ -1,6 +1,7 @@
 /** Agent Team Orchestrator - Shared Types and Utilities */
 
 export * from "./python-runner.js";
+export * from "./audit-reader.js";
 
 // Subtask definition from task decomposition
 export interface Subtask {

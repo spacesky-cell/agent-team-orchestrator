@@ -12,7 +12,8 @@ import {
   getCoreModulePath,
   getProjectRoot,
   getPythonPath,
-} from "@ato/shared";
+  readAuditSummary,
+} from "@spacesky-cell/ato-shared";
 
 dotenv.config();
 
@@ -233,6 +234,26 @@ print(json.dumps({
 `;
 }
 
+function printAuditSummary(outputDir: string) {
+  const audit = readAuditSummary(outputDir);
+  console.log(chalk.bold("Audit file:"), audit.path);
+  console.log(
+    chalk.bold("Audit events:"),
+    `${audit.total} completed=${audit.completed} blocked=${audit.blocked} failed=${audit.failed} parseErrors=${audit.parseErrors}`,
+  );
+  if (audit.recent.length > 0) {
+    console.log(chalk.bold("Recent tool calls:"));
+    for (const event of audit.recent) {
+      const error = event.error ? chalk.red(` - ${event.error}`) : "";
+      console.log(
+        `  - ${event.tool_name || "unknown"} [${event.status || "unknown"}, ${event.decision || "unknown"}]${error}`,
+      );
+    }
+  } else {
+    console.log(chalk.dim("No audit events found."));
+  }
+}
+
 async function runTask(description: string, options: { output: string }) {
   console.log(chalk.cyan.bold("\nAgent Team Orchestrator\n"));
   console.log(chalk.dim("Task:"), description);
@@ -265,6 +286,7 @@ async function runTask(description: string, options: { output: string }) {
     if (result.exitCode === 0) {
       console.log(chalk.green.bold("Task completed successfully."));
       console.log(chalk.dim("Output saved to:"), chalk.cyan(outputDir));
+      console.log(chalk.dim("Tool audit:"), chalk.cyan(join(outputDir, "tool-audit.jsonl")));
     } else {
       console.log(chalk.red.bold("Task failed with exit code:"), result.exitCode);
       process.exit(result.exitCode);
@@ -303,6 +325,8 @@ async function getTaskStatus(taskId: string, options: { output: string }) {
   console.log(chalk.bold("Status:"), taskStatus.status);
   console.log(chalk.bold("Source:"), taskStatus.source || "none");
   console.log(chalk.bold("Artifacts:"), Object.keys(taskStatus.artifacts || {}).length);
+  console.log();
+  printAuditSummary(outputDir);
 }
 
 async function listIncompleteTasks(options: { output: string }) {
@@ -361,6 +385,11 @@ async function doctor() {
   console.log("Claude CLI:", result.env.CLAUDE_CLI);
 }
 
+async function getTaskAudit(options: { output: string }) {
+  console.log(chalk.cyan.bold("\nTool Audit\n"));
+  printAuditSummary(resolve(options.output));
+}
+
 program
   .name("ato")
   .description("Agent Team Orchestrator - Multi-agent collaboration CLI")
@@ -379,6 +408,12 @@ program
   .description("Get the status of a task")
   .option("-o, --output <dir>", "Output directory for artifacts", "./ato-output")
   .action(getTaskStatus);
+
+program
+  .command("audit")
+  .description("Summarize tool execution audit events")
+  .option("-o, --output <dir>", "Output directory for artifacts", "./ato-output")
+  .action(getTaskAudit);
 
 program
   .command("tasks")

@@ -1,5 +1,6 @@
 """LLM provider abstraction for multi-provider support."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -104,6 +105,8 @@ class OllamaProvider(BaseLLMProvider):
 class ClaudeCliChatModel:
     """Minimal chat model adapter backed by an authenticated Claude Code CLI."""
 
+    is_claude_cli = True
+
     def __init__(self, timeout: int = 300):
         self.timeout = timeout
 
@@ -142,6 +145,51 @@ class ClaudeCliChatModel:
             raise ValueError(f"Claude Code CLI failed: {error}")
 
         return AIMessage(content=result.stdout.strip())
+
+    def invoke_json_schema(self, messages: list[BaseMessage] | str, schema: dict[str, Any]):
+        """Invoke Claude CLI with structured-output validation and return structured JSON."""
+        prompt = self._format_prompt(messages)
+        claude_path = shutil.which("claude")
+        if not claude_path:
+            raise ValueError(
+                "Claude Code CLI not found on PATH. Install/login Claude Code first, "
+                "or use LLM_PROVIDER=anthropic with ANTHROPIC_API_KEY."
+            )
+
+        result = subprocess.run(
+            [
+                claude_path,
+                "-p",
+                "--safe-mode",
+                "--tools",
+                "",
+                "--output-format",
+                "json",
+                "--json-schema",
+                json.dumps(schema, ensure_ascii=False),
+            ],
+            input=prompt,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=self.timeout,
+        )
+
+        if result.returncode != 0:
+            error = (result.stderr or result.stdout or "unknown error").strip()
+            raise ValueError(f"Claude Code CLI failed: {error}")
+
+        try:
+            payload = json.loads(result.stdout)
+            structured = payload.get("structured_output")
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Claude Code CLI returned invalid JSON wrapper: {exc}") from exc
+
+        if structured is None:
+            raise ValueError("Claude Code CLI JSON output did not include structured_output.")
+
+        return AIMessage(content=json.dumps(structured, ensure_ascii=False, separators=(",", ":")))
 
     def _format_prompt(self, messages: list[BaseMessage] | str) -> str:
         if isinstance(messages, str):

@@ -13,7 +13,8 @@ Agent Team Orchestrator (ATO) is a multi-agent collaboration orchestration syste
 - **Automatic Task Decomposition**: Intelligently breaks down complex tasks into executable subtasks
 - **Parallel Execution**: Multiple agents work simultaneously with dependency management
 - **LangGraph Orchestration**: DAG-based task execution with checkpoint resumption
-- **Tool Calling Capabilities**: Agents can read/write files, execute commands, run tests, commit code
+- **Structured Claude CLI Tool Bridge**: Claude Code CLI agents can request tools through a JSON protocol without relying on native LangChain tool calls
+- **Tool Policy and Audit Trail**: Read-only tools run automatically; write, command, test, and git tools require explicit local auto-approval and are logged to `tool-audit.jsonl`
 - **Team Memory**: Shared context storage with architecture decision records and code change tracking
 - **MCP Integration**: Seamless integration with Claude Code as an MCP Server
 - **CLI Tool**: Command-line interface for task execution and management
@@ -110,7 +111,8 @@ The system will automatically:
 1. Decompose the task into multiple subtasks
 2. Assign to appropriate agent roles
 3. Execute all subtasks in parallel
-4. Merge and save results
+4. Execute allowed project tools through the structured tool bridge
+5. Merge results and save `result.json` plus `tool-audit.jsonl`
 
 **Example:**
 
@@ -220,6 +222,8 @@ ato/
 
 - **ToolEnabledOrchestrator**: Main orchestrator with tool calling
   - ReAct loop pattern agent execution
+  - Structured Claude CLI JSON tool-call protocol
+  - Tool policy and JSONL audit logging
   - SQLite checkpoint persistence
   - Parallel subtask execution
   - Team memory integration
@@ -308,7 +312,8 @@ claude mcp get ato
 | Tool | Description |
 |------|------|
 | `create_team_task` | Create and execute team task with automatic decomposition and multi-agent parallel execution |
-| `get_task_status` | Query task execution status |
+| `get_task_status` | Query task execution status, artifact list, and tool audit summary |
+| `get_task_audit` | Summarize tool execution audit events from `tool-audit.jsonl` |
 | `approve_step` | Approve/reject current step (for manual approval workflows) |
 | `list_available_roles` | List all available agent roles with their capabilities |
 | `list_incomplete_tasks` | List incomplete tasks (useful for resuming interrupted work) |
@@ -344,8 +349,20 @@ Returns:
 - Overall status (pending/running/completed/failed)
 - Individual subtask statuses
 - Artifact list
+- Tool audit counts and recent events
 
-#### 3. List Available Roles
+#### 3. Query Tool Audit
+
+```
+get_task_audit(outputDir: "./ato-output")
+```
+
+Returns:
+- Audit file path
+- Completed, blocked, failed, and parse-error counts
+- Recent tool calls with decisions and errors
+
+#### 4. List Available Roles
 
 ```
 list_available_roles()
@@ -353,7 +370,7 @@ list_available_roles()
 
 Returns all available roles with their expertise and available tools.
 
-#### 4. Search Team Memory
+#### 5. Search Team Memory
 
 ```
 query_team_memory(
@@ -384,6 +401,9 @@ ato roles
 
 # Query task status
 ato status <task-id>
+
+# Summarize tool execution audit
+ato audit
 
 # List incomplete tasks
 ato tasks
@@ -446,6 +466,8 @@ context = memory.retrieve_relevant_context(
 | `LLM_MODEL` | `claude-sonnet-4-20250514` | Model name |
 | `LLM_TEMPERATURE` | `0.7` | Generation temperature |
 | `LLM_MAX_TOKENS` | `4096` | Maximum tokens |
+| `ATO_MAX_TOOL_ITERATIONS` | `10` | Maximum Claude CLI structured tool-call loop iterations |
+| `ATO_AUTO_APPROVE_TOOLS` | - | Set to `1` to allow restricted tools such as `execute_command`, `run_tests`, `write_file`, and `git_commit` during local debugging |
 | `ANTHROPIC_API_KEY` | - | Anthropic API Key |
 | `OPENAI_API_KEY` | - | OpenAI API Key |
 | `OPENAI_BASE_URL` | - | OpenAI API base URL (for custom endpoints like NVIDIA API) |

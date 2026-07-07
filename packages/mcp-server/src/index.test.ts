@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { executePythonJson, getCoreModulePath, getProjectRoot, getPythonPath } from "@ato/shared";
+import {
+  executePythonJson,
+  getCoreModulePath,
+  getProjectRoot,
+  getPythonPath,
+  readAuditSummary,
+} from "@spacesky-cell/ato-shared";
+import { mkdtempSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 describe("MCP server smoke", () => {
   it("discovers project root", () => {
@@ -96,5 +105,29 @@ print(json.dumps({
     expect(result.roles.length).toBeGreaterThan(0);
     expect(result.env).toBeDefined();
     expect(result.env.LLM_PROVIDER).toBe("claude-cli");
+  });
+
+  it("summarizes task audit files for MCP status output", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ato-mcp-audit-"));
+    writeFileSync(
+      join(dir, "tool-audit.jsonl"),
+      JSON.stringify({
+        timestamp: "2026-07-07T00:00:00.000Z",
+        task_id: "task-1",
+        subtask_id: "st-1",
+        role: "tester",
+        tool_name: "execute_command",
+        decision: "requires_approval",
+        status: "blocked",
+        duration_ms: 0,
+      }),
+      "utf-8",
+    );
+
+    const summary = readAuditSummary(dir);
+
+    expect(summary.total).toBe(1);
+    expect(summary.blocked).toBe(1);
+    expect(summary.recent[0].tool_name).toBe("execute_command");
   });
 });

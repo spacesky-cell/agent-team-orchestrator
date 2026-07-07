@@ -9,7 +9,8 @@ import {
   getCoreModulePath,
   getProjectRoot,
   getPythonPath,
-} from "@ato/shared";
+  readAuditSummary,
+} from "@spacesky-cell/ato-shared";
 import { mkdirSync } from "fs";
 import { resolve } from "path";
 
@@ -29,6 +30,26 @@ interface TaskStatus {
   artifacts: Record<string, any>;
   source?: string;
   error?: string;
+}
+
+function formatAuditSummary(outputDir: string): string {
+  const audit = readAuditSummary(outputDir);
+  const recent =
+    audit.recent
+      .map((event) => {
+        const status = event.status || "unknown";
+        const decision = event.decision || "unknown";
+        const tool = event.tool_name || "unknown";
+        const error = event.error ? ` - ${event.error}` : "";
+        return `- ${tool} [${status}, ${decision}]${error}`;
+      })
+      .join("\n") || "No audit events.";
+
+  return (
+    `Audit file: ${audit.path}\n` +
+    `Events: ${audit.total} completed=${audit.completed} blocked=${audit.blocked} failed=${audit.failed} parseErrors=${audit.parseErrors}\n` +
+    `Recent:\n${recent}`
+  );
 }
 
 function normalizeRoot(path?: string): string {
@@ -320,6 +341,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "get_task_audit",
+        description: "Summarize tool execution audit events for a task output directory",
+        inputSchema: {
+          type: "object",
+          properties: {
+            outputDir: {
+              type: "string",
+              description: "Directory containing task outputs and tool-audit.jsonl",
+              default: "./ato-output",
+            },
+          },
+        },
+      },
+      {
         name: "approve_step",
         description: "Approve or reject current execution step",
         inputSchema: {
@@ -433,11 +468,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text:
-                `Team task executed\n\nTask ID: ${result.task_id}\n` +
-                `Status: ${result.status}\nSummary: ${result.summary}\n` +
-                `Progress: ${result.completed_count}/${result.subtask_count}\n\n` +
-                `Output saved to: ${outputDir}/result.json`,
+          text:
+            `Team task executed\n\nTask ID: ${result.task_id}\n` +
+            `Status: ${result.status}\nSummary: ${result.summary}\n` +
+            `Progress: ${result.completed_count}/${result.subtask_count}\n\n` +
+                `Output saved to: ${outputDir}/result.json\n` +
+                `Tool audit: ${outputDir}/tool-audit.jsonl`,
             },
           ],
         };
@@ -465,7 +501,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 `## Task Status: ${rawArgs.taskId}\n\n` +
                 `**Overall Status:** ${taskStatus.status}\n` +
                 `**Source:** ${taskStatus.source || "none"}\n\n` +
-                `### Subtasks\n${subtaskDetails}\n\n### Artifacts\n${artifactList}`,
+                `### Subtasks\n${subtaskDetails}\n\n### Artifacts\n${artifactList}\n\n` +
+                `### Tool Audit\n${formatAuditSummary(outputDir)}`,
+            },
+          ],
+        };
+      }
+
+      case "get_task_audit": {
+        const outputDir = resolve(rawArgs.outputDir || "./ato-output");
+        return {
+          content: [
+            {
+              type: "text",
+              text: `## Tool Audit\n\n${formatAuditSummary(outputDir)}`,
             },
           ],
         };
