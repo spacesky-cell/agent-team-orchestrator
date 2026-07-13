@@ -229,7 +229,7 @@ export async function defaultDependencies(): Promise<CliDependencies> {
       call: async <T>(command: string, payload: Record<string, unknown>) =>
         (await getBridge()).call<T>(command, payload),
     },
-    version: "0.1.0",
+    version: "0.2.0",
     cwd: () => process.cwd(),
     stdout: (value) => console.log(value),
     stderr: (value) => console.error(value),

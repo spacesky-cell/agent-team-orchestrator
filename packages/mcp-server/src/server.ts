@@ -191,7 +191,7 @@ const tools = [
 
 export function createAtoServer(bridge: BridgePort): Server {
   const server = new Server(
-    { name: "ato", version: "0.1.0" },
+    { name: "ato", version: "0.2.0" },
     { capabilities: { tools: {} } },
   );
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));

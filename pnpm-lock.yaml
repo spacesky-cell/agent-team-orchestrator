@@ -9,10 +9,10 @@ importers:
   .:
     dependencies:
       '@spacesky-cell/ato-cli':
-        specifier: workspace:0.1.0
+        specifier: workspace:0.2.0
         version: link:packages/cli
       '@spacesky-cell/ato-mcp-server':
-        specifier: workspace:0.1.0
+        specifier: workspace:0.2.0
         version: link:packages/mcp-server
     devDependencies:
       '@vitest/coverage-v8':
@@ -31,7 +31,7 @@ importers:
   packages/cli:
     dependencies:
       '@spacesky-cell/ato-shared':
-        specifier: workspace:0.1.0
+        specifier: workspace:0.2.0
         version: link:../shared
       commander:
         specifier: ^12.0.0
@@ -55,7 +55,7 @@ importers:
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
       '@spacesky-cell/ato-shared':
-        specifier: workspace:0.1.0
+        specifier: workspace:0.2.0
         version: link:../shared
     devDependencies:
       '@types/node':

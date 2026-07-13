@@ -1,6 +1,6 @@
 {
   "name": "@spacesky-cell/ato-mcp-server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent Team Orchestrator - MCP Server implementation",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "clean": "node ../../scripts/clean-package.mjs dist"
   },
   "dependencies": {
-    "@spacesky-cell/ato-shared": "workspace:0.1.0",
+    "@spacesky-cell/ato-shared": "workspace:0.2.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {

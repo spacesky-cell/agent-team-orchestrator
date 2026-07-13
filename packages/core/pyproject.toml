@@ -1,6 +1,6 @@
 [project]
 name = "ato-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "Agent Team Orchestrator - Core Python package with LangGraph"
 readme = "README.md"
 requires-python = ">=3.10"
