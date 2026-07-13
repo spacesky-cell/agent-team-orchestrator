@@ -2,6 +2,8 @@
 
 from importlib import import_module, resources, util
 
+import pytest
+
 
 def test_public_package_is_ato_core() -> None:
     spec = util.find_spec("ato_core")
@@ -9,6 +11,13 @@ def test_public_package_is_ato_core() -> None:
     assert spec is not None
     package = import_module("ato_core")
     assert package.__version__
+
+
+def test_unknown_public_export_names_the_real_package() -> None:
+    package = import_module("ato_core")
+
+    with pytest.raises(AttributeError, match="module 'ato_core' has no attribute 'missing'"):
+        getattr(package, "missing")
 
 
 def test_built_in_roles_are_package_resources() -> None:

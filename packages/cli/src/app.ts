@@ -202,7 +202,12 @@ export async function runCli(argv: string[], deps: CliDependencies): Promise<num
     return 0;
   } catch (error) {
     if (error instanceof CliStatus) return error.exitCode;
-    if (error instanceof CommanderError && error.code === "commander.helpDisplayed") return 0;
+    if (
+      error instanceof CommanderError &&
+      ["commander.helpDisplayed", "commander.version"].includes(error.code)
+    ) {
+      return 0;
+    }
     const code =
       error && typeof error === "object" && "code" in error ? String(error.code) : "CLI_ERROR";
     const message = error instanceof Error ? error.message : String(error);

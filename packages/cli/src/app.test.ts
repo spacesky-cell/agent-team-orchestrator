@@ -30,6 +30,15 @@ function setup(bridge = new FakeBridge()) {
 }
 
 describe("CLI bridge adapter", () => {
+  it("returns zero for version without discovering Python", async () => {
+    const { deps, stdout } = setup();
+
+    const code = await runCli(["node", "ato", "--version"], deps);
+
+    expect(code).toBe(0);
+    expect(stdout).toEqual(["0.2.0"]);
+  });
+
   it("maps read commands to exact bridge requests", async () => {
     const { bridge, deps } = setup();
     bridge.responses = [

@@ -117,7 +117,7 @@ class _LazyModule:
             items = getter()
             if name in items:
                 return items[name]
-        raise AttributeError(f"module 'src' has no attribute '{name}'")
+        raise AttributeError(f"module 'ato_core' has no attribute '{name}'")
 
 
 # Create the lazy accessor
