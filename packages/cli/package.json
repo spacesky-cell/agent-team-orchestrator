@@ -4,8 +4,15 @@
   "description": "Agent Team Orchestrator - CLI tool",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
-    "ato": "dist/index.js"
+    "ato": "dist/bin.js"
   },
   "scripts": {
     "build": "tsc",
