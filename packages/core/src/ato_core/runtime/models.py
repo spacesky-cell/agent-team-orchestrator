@@ -38,6 +38,7 @@ class ApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     request_id: str
+    request_key: str | None = None
     task_id: str
     subtask_id: str
     tool_name: str
@@ -61,6 +62,7 @@ class TaskRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     task_id: str
+    description: str = ""
     status: TaskStatus
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

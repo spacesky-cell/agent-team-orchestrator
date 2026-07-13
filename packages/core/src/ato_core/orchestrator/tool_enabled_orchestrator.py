@@ -6,9 +6,12 @@ import time
 from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.types import interrupt
 
 from ..memory.team_memory import TeamMemory
 from ..models.state import SubtaskDef, TeamState
+from ..runtime.approval import ApprovalStore, ToolPermission
+from ..runtime.task_store import TaskStore
 from ..tools import get_all_tools, get_tools_for_role
 from ..tools.base import ToolExecutionContext
 from ..tools.schema import pydantic_model_for_tool
@@ -41,6 +44,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
         project_root: str | Path = ".",
         memory_dir: str = ".ato/memory",
         audit_path: str | Path | None = None,
+        task_store: TaskStore | None = None,
     ):
         """Initialize the orchestrator.
 
@@ -57,6 +61,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             Path(audit_path) if audit_path else self.db_path.parent / "tool-audit.jsonl"
         )
         self.tool_policy = ToolPolicy()
+        self.approval_store = ApprovalStore(task_store) if task_store is not None else None
         self.audit_logger = ToolAuditLogger(self.audit_path)
 
         # Initialize team memory for context sharing
@@ -332,7 +337,7 @@ You have access to tools - use them if needed to complete your task.
         ]
         max_iterations = int(os.getenv("ATO_MAX_TOOL_ITERATIONS", "10"))
 
-        for _ in range(max_iterations):
+        for iteration in range(max_iterations):
             if hasattr(llm, "invoke_json_schema"):
                 response = llm.invoke_json_schema(messages, tool_protocol_json_schema(tools))
             else:
@@ -371,6 +376,7 @@ You have access to tools - use them if needed to complete your task.
                     role_name=role_name,
                     policy=policy,
                     audit_logger=audit_logger,
+                    approval_key=f"claude-cli:{subtask.get('id', 'unknown')}:{iteration}",
                 )
 
             if tool_result.startswith("Blocked:"):
@@ -399,13 +405,14 @@ You have access to tools - use them if needed to complete your task.
         role_name: str,
         policy: ToolPolicy,
         audit_logger: ToolAuditLogger,
+        approval_key: str | None = None,
     ) -> str:
         """Execute one tool call after policy evaluation and audit every outcome."""
         decision = policy.evaluate(tool.name, tool_args)
         task_id = str(state.get("task_id", "unknown"))
         subtask_id = str(subtask.get("id", "unknown"))
 
-        if not decision.allowed:
+        if decision.permission is ToolPermission.DENY:
             audit_logger.record(
                 task_id=task_id,
                 subtask_id=subtask_id,
@@ -418,6 +425,51 @@ You have access to tools - use them if needed to complete your task.
                 error=decision.reason,
             )
             return f"Blocked: tool {tool.name} requires approval. {decision.reason}"
+
+        if decision.permission is ToolPermission.REQUIRE_APPROVAL and not decision.allowed:
+            if self.approval_store is None:
+                audit_logger.record(
+                    task_id=task_id,
+                    subtask_id=subtask_id,
+                    role=role_name,
+                    tool_name=tool.name,
+                    args=tool_args,
+                    decision=decision.decision,
+                    status="blocked",
+                    duration_ms=0,
+                    error=decision.reason,
+                )
+                return f"Blocked: tool {tool.name} requires approval. {decision.reason}"
+            request = self.approval_store.request(
+                subtask_id,
+                tool.name,
+                tool_args,
+                request_key=approval_key or f"{subtask_id}:{tool.name}",
+            )
+            audit_logger.record(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                role=role_name,
+                tool_name=tool.name,
+                args=tool_args,
+                decision="requires_approval",
+                status="requested",
+                duration_ms=0,
+            )
+            resume = interrupt(request.model_dump(mode="json"))
+            approval = self.approval_store.validate_resume(request, resume)
+            audit_logger.record(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                role=role_name,
+                tool_name=tool.name,
+                args=tool_args,
+                decision="approved" if approval.approved else "rejected",
+                status="approved" if approval.approved else "rejected",
+                duration_ms=0,
+            )
+            if not approval.approved:
+                return f"Blocked: approval rejected for tool {tool.name}"
 
         started = time.perf_counter()
         try:

@@ -1,58 +1,17 @@
 """Tool execution policy and audit logging."""
 
 import json
-import os
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
+from ..runtime.approval import ToolDecision, ToolPolicy
 
-ToolDecisionName = Literal["auto_allowed", "auto_approved_env", "requires_approval"]
-ToolStatus = Literal["completed", "failed", "blocked"]
+ToolStatus = Literal[
+    "requested", "approved", "rejected", "completed", "failed", "blocked"
+]
 
-
-@dataclass
-class ToolDecision:
-    """Decision returned by the tool policy."""
-
-    allowed: bool
-    decision: ToolDecisionName
-    reason: str | None = None
-
-
-class ToolPolicy:
-    """Minimal non-interactive policy for agent tool execution."""
-
-    def __init__(
-        self,
-        auto_allowed_tools: set[str] | None = None,
-        approval_required_tools: set[str] | None = None,
-    ):
-        self.auto_allowed_tools = auto_allowed_tools or {
-            "read_file",
-            "list_directory",
-            "search_code",
-            "analyze_file",
-        }
-        self.approval_required_tools = approval_required_tools or {
-            "write_file",
-            "delete_file",
-            "execute_command",
-            "run_tests",
-            "git_commit",
-        }
-
-    def evaluate(self, tool_name: str, args: dict[str, Any]) -> ToolDecision:
-        """Return whether a tool call may execute in the current environment."""
-        if os.getenv("ATO_AUTO_APPROVE_TOOLS") == "1":
-            return ToolDecision(allowed=True, decision="auto_approved_env")
-
-        if tool_name in self.auto_allowed_tools:
-            return ToolDecision(allowed=True, decision="auto_allowed")
-
-        reason = f"tool {tool_name} requires approval in non-interactive mode"
-        return ToolDecision(allowed=False, decision="requires_approval", reason=reason)
+__all__ = ["ToolAuditLogger", "ToolDecision", "ToolPolicy"]
 
 
 class ToolAuditLogger:
