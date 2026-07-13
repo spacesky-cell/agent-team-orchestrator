@@ -38,6 +38,7 @@ class TaskPaths:
     root: Path
     state: Path
     result: Path
+    decomposition: Path
     checkpoints: Path
     approvals: Path
     audit: Path
@@ -64,12 +65,19 @@ class TaskStore:
         self._append_lock = threading.Lock()
 
     @classmethod
-    def create(cls, output_root: Path, task_id: str, project_root: Path) -> "TaskStore":
+    def create(
+        cls,
+        output_root: Path,
+        task_id: str,
+        project_root: Path,
+        description: str = "",
+    ) -> "TaskStore":
         root = output_root.resolve() / "tasks" / task_id
         paths = TaskPaths(
             root=root,
             state=root / "task.json",
             result=root / "result.json",
+            decomposition=root / "decomposition.json",
             checkpoints=root / "checkpoints.db",
             approvals=root / "approvals.jsonl",
             audit=root / "tool-audit.jsonl",
@@ -79,6 +87,7 @@ class TaskStore:
             raise TaskStoreError("TASK_ALREADY_EXISTS", f"task already exists: {task_id}")
         record = TaskRecord(
             task_id=task_id,
+            description=description,
             status="queued",
             project_root=project_root.resolve(),
             output_dir=root,
@@ -94,6 +103,7 @@ class TaskStore:
                 root=root,
                 state=root / "task.json",
                 result=root / "result.json",
+                decomposition=root / "decomposition.json",
                 checkpoints=root / "checkpoints.db",
                 approvals=root / "approvals.jsonl",
                 audit=root / "tool-audit.jsonl",
@@ -134,6 +144,24 @@ class TaskStore:
         if record.status not in {"completed", "blocked", "failed"}:
             raise TaskStoreError("TASK_NOT_TERMINAL", f"task status is {record.status}")
         _write_json_atomic(self.paths.result, payload)
+
+    def write_decomposition(self, subtasks: list[dict[str, Any]]) -> None:
+        _write_json_atomic(self.paths.decomposition, {"subtasks": subtasks})
+
+    def read_decomposition(self) -> list[dict[str, Any]]:
+        if not self.paths.decomposition.is_file():
+            raise TaskStoreError(
+                "TASK_DECOMPOSITION_MISSING",
+                f"missing decomposition: {self.paths.decomposition}",
+            )
+        try:
+            payload = json.loads(self.paths.decomposition.read_text(encoding="utf-8"))
+            subtasks = payload["subtasks"]
+            if not isinstance(subtasks, list):
+                raise TypeError("subtasks must be a list")
+            return subtasks
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            raise TaskStoreError("TASK_DECOMPOSITION_CORRUPT", str(exc)) from exc
 
     def append_jsonl(self, path: Path, payload: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
