@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from importlib.abc import Traversable
+from importlib import resources
 from pathlib import Path
 from typing import Optional
 
@@ -47,33 +49,34 @@ class Role(BaseModel):
         return self.system_prompt.replace("{{context}}", context)
 
 
-# Path to the roles directory
-ROLES_DIR = Path(__file__).parent.parent.parent.parent.parent / "roles"
-SCHEMA_PATH = ROLES_DIR / "schema" / "role.schema.json"
+def built_in_roles_dir() -> Traversable:
+    """Return the packaged built-in role resource directory."""
+    return resources.files("ato_core.resources.roles")
 
 
 class RoleLoader:
     """Load and validate role definitions from YAML files."""
 
     def __init__(self, roles_dir: Optional[Path] = None):
-        self.roles_dir = roles_dir or ROLES_DIR
+        self.roles_dir: Path | Traversable = roles_dir or built_in_roles_dir()
         self._schema: Optional[dict] = None
 
     @property
     def schema(self) -> dict:
         """Load and cache the JSON Schema for validation."""
         if self._schema is None:
-            with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            schema_path = self.roles_dir.joinpath("schema", "role.schema.json")
+            with schema_path.open("r", encoding="utf-8") as f:
                 self._schema = json.load(f)
         return self._schema
 
     def load(self, role_id: str) -> Role:
         """Load a role by its ID (looks for <roles_dir>/<role_id>.yaml)."""
-        yaml_path = self.roles_dir / f"{role_id}.yaml"
-        if not yaml_path.exists():
+        yaml_path = self.roles_dir.joinpath(f"{role_id}.yaml")
+        if not yaml_path.is_file():
             raise FileNotFoundError(f"Role definition not found: {yaml_path}")
 
-        with open(yaml_path, "r", encoding="utf-8") as f:
+        with yaml_path.open("r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Validate against JSON Schema
@@ -86,9 +89,11 @@ class RoleLoader:
 
     def list_roles(self) -> list[str]:
         """List all available role IDs."""
-        if not self.roles_dir.exists():
-            return []
-        return [p.stem for p in sorted(self.roles_dir.glob("*.yaml"))]
+        return sorted(
+            item.name.removesuffix(".yaml")
+            for item in self.roles_dir.iterdir()
+            if item.is_file() and item.name.endswith(".yaml")
+        )
 
     def load_all(self) -> dict[str, Role]:
         """Load all available roles."""

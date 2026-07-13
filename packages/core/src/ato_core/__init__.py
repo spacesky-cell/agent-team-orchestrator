@@ -121,6 +121,11 @@ class _LazyModule:
 # Create the lazy accessor
 _lazy = _LazyModule()
 
+
+def __getattr__(name: str):
+    """Resolve public exports lazily at module level."""
+    return _lazy.__getattr__(name)
+
 # Export everything through lazy accessor for package-level imports
 __all__ = [
     # Models

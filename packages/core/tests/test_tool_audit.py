@@ -5,7 +5,7 @@ import json
 import pytest
 from langchain_core.messages import AIMessage
 
-from src.tools.base import BaseTool
+from ato_core.tools.base import BaseTool
 
 
 class EchoTool(BaseTool):
@@ -49,7 +49,7 @@ class FakeClaudeCliModel:
 
 
 def test_parse_structured_claude_cli_tool_call_from_fenced_json():
-    from src.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
+    from ato_core.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
 
     parsed = parse_claude_cli_tool_response(
         """
@@ -65,7 +65,7 @@ def test_parse_structured_claude_cli_tool_call_from_fenced_json():
 
 
 def test_parse_structured_claude_cli_final_response_from_raw_json():
-    from src.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
+    from ato_core.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
 
     parsed = parse_claude_cli_tool_response('{"type":"final","content":"done"}')
 
@@ -74,15 +74,15 @@ def test_parse_structured_claude_cli_final_response_from_raw_json():
 
 
 def test_parse_structured_claude_cli_rejects_invalid_json():
-    from src.orchestrator.claude_cli_tools import ToolResponseParseError
-    from src.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
+    from ato_core.orchestrator.claude_cli_tools import ToolResponseParseError
+    from ato_core.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
 
     with pytest.raises(ToolResponseParseError):
         parse_claude_cli_tool_response("plain markdown answer")
 
 
 def test_tool_protocol_schema_uses_claude_cli_compatible_flat_shape():
-    from src.orchestrator.claude_cli_tools import tool_protocol_json_schema
+    from ato_core.orchestrator.claude_cli_tools import tool_protocol_json_schema
 
     schema = tool_protocol_json_schema([EchoTool(), CommandTool()])
 
@@ -93,7 +93,7 @@ def test_tool_protocol_schema_uses_claude_cli_compatible_flat_shape():
 
 
 def test_tool_policy_blocks_execute_command_by_default(tmp_path, monkeypatch):
-    from src.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
+    from ato_core.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
 
     monkeypatch.delenv("ATO_AUTO_APPROVE_TOOLS", raising=False)
     policy = ToolPolicy()
@@ -123,7 +123,7 @@ def test_tool_policy_blocks_execute_command_by_default(tmp_path, monkeypatch):
 
 
 def test_tool_policy_auto_approves_restricted_tools_with_env(monkeypatch):
-    from src.orchestrator.tool_audit import ToolPolicy
+    from ato_core.orchestrator.tool_audit import ToolPolicy
 
     monkeypatch.setenv("ATO_AUTO_APPROVE_TOOLS", "1")
 
@@ -134,8 +134,8 @@ def test_tool_policy_auto_approves_restricted_tools_with_env(monkeypatch):
 
 
 def test_claude_cli_structured_loop_executes_tool_then_returns_final(tmp_path, monkeypatch):
-    from src.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
-    from src.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
+    from ato_core.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
+    from ato_core.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
 
     orchestrator = ToolEnabledOrchestrator(
         db_path=tmp_path / "checkpoints.db",
@@ -171,8 +171,8 @@ def test_claude_cli_structured_loop_executes_tool_then_returns_final(tmp_path, m
 
 
 def test_claude_cli_structured_loop_returns_blocked_for_approval_required_tool(tmp_path):
-    from src.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
-    from src.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
+    from ato_core.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
+    from ato_core.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
 
     orchestrator = ToolEnabledOrchestrator(
         db_path=tmp_path / "checkpoints.db",
@@ -203,8 +203,8 @@ def test_claude_cli_structured_loop_returns_blocked_for_approval_required_tool(t
 
 
 def test_claude_cli_structured_loop_returns_error_for_unknown_tool(tmp_path):
-    from src.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
-    from src.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
+    from ato_core.orchestrator.tool_audit import ToolAuditLogger, ToolPolicy
+    from ato_core.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
 
     orchestrator = ToolEnabledOrchestrator(
         db_path=tmp_path / "checkpoints.db",

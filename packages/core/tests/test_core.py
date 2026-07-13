@@ -14,7 +14,7 @@ class TestRoleLoader:
         pytest.importorskip("langchain_anthropic", reason="langchain-anthropic not installed")
 
     def test_list_roles(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         roles = loader.list_roles()
@@ -23,7 +23,7 @@ class TestRoleLoader:
         assert "architect" in roles
 
     def test_load_architect_role(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         role = loader.load("architect")
@@ -33,21 +33,21 @@ class TestRoleLoader:
         assert len(role.tools) > 0
 
     def test_load_backend_developer_role(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         role = loader.load("backend-developer")
         assert role.id == "backend-developer"
 
     def test_load_nonexistent_role_raises(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         with pytest.raises(FileNotFoundError):
             loader.load("nonexistent-role")
 
     def test_role_render_prompt(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         role = loader.load("architect")
@@ -55,7 +55,7 @@ class TestRoleLoader:
         assert "Test context" in prompt
 
     def test_role_render_prompt_empty_context(self):
-        from src.models.role import RoleLoader
+        from ato_core.models.role import RoleLoader
 
         loader = RoleLoader()
         role = loader.load("architect")
@@ -71,7 +71,7 @@ class TestModels:
         pytest.importorskip("langchain_anthropic", reason="langchain-anthropic not installed")
 
     def test_subtask_model(self):
-        from src.models.task import Subtask
+        from ato_core.models.task import Subtask
 
         subtask = Subtask(
             id="st-1",
@@ -83,7 +83,7 @@ class TestModels:
         assert subtask.dependencies == []
 
     def test_task_decomposition_model(self):
-        from src.models.task import Subtask, TaskDecomposition
+        from ato_core.models.task import Subtask, TaskDecomposition
 
         decomposition = TaskDecomposition(
             task_id="task-001",
@@ -101,7 +101,7 @@ class TestModels:
         assert len(decomposition.subtasks) == 1
 
     def test_task_result_model(self):
-        from src.models.task import TaskResult
+        from ato_core.models.task import TaskResult
 
         result = TaskResult(
             task_id="task-001",
@@ -112,7 +112,7 @@ class TestModels:
         assert result.error is None
 
     def test_team_state_typeddict(self):
-        from src.models.state import TeamState
+        from ato_core.models.state import TeamState
 
         state: TeamState = {
             "task_id": "task-001",
@@ -135,14 +135,14 @@ class TestModels:
         assert state["subtasks"][0]["status"] == "pending"
 
     def test_llm_config(self):
-        from src.models.llm_provider import LLMConfig
+        from ato_core.models.llm_provider import LLMConfig
 
         config = LLMConfig(provider="openai", model="gpt-4")
         assert config.provider == "openai"
         assert config.temperature == 0.7
 
     def test_llm_config_default_provider_uses_claude_cli(self):
-        from src.models.llm_provider import LLMConfig
+        from ato_core.models.llm_provider import LLMConfig
 
         assert LLMConfig().provider == "claude-cli"
 
@@ -151,7 +151,7 @@ class TestLLMProvider:
     """Tests for LLM provider selection and adapters."""
 
     def test_claude_cli_provider_selected_from_environment(self, monkeypatch):
-        from src.models.llm_provider import ClaudeCliProvider, get_llm_provider
+        from ato_core.models.llm_provider import ClaudeCliProvider, get_llm_provider
 
         monkeypatch.setenv("LLM_PROVIDER", "claude-cli")
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -163,7 +163,7 @@ class TestLLMProvider:
     def test_claude_cli_chat_model_invokes_claude_print(self, monkeypatch):
         from langchain_core.messages import HumanMessage, SystemMessage
 
-        from src.models.llm_provider import ClaudeCliChatModel
+        from ato_core.models.llm_provider import ClaudeCliChatModel
 
         captured = {}
 
@@ -177,8 +177,8 @@ class TestLLMProvider:
             captured["kwargs"] = kwargs
             return Result()
 
-        monkeypatch.setattr("src.models.llm_provider.shutil.which", lambda name: "claude")
-        monkeypatch.setattr("src.models.llm_provider.subprocess.run", fake_run)
+        monkeypatch.setattr("ato_core.models.llm_provider.shutil.which", lambda name: "claude")
+        monkeypatch.setattr("ato_core.models.llm_provider.subprocess.run", fake_run)
 
         llm = ClaudeCliChatModel(timeout=12)
         response = llm.invoke(
@@ -202,7 +202,7 @@ class TestLLMProvider:
     def test_claude_cli_chat_model_invokes_json_schema(self, monkeypatch):
         from langchain_core.messages import HumanMessage
 
-        from src.models.llm_provider import ClaudeCliChatModel
+        from ato_core.models.llm_provider import ClaudeCliChatModel
 
         captured = {}
 
@@ -219,8 +219,8 @@ class TestLLMProvider:
             captured["kwargs"] = kwargs
             return Result()
 
-        monkeypatch.setattr("src.models.llm_provider.shutil.which", lambda name: "claude")
-        monkeypatch.setattr("src.models.llm_provider.subprocess.run", fake_run)
+        monkeypatch.setattr("ato_core.models.llm_provider.shutil.which", lambda name: "claude")
+        monkeypatch.setattr("ato_core.models.llm_provider.subprocess.run", fake_run)
 
         llm = ClaudeCliChatModel(timeout=12)
         response = llm.invoke_json_schema(
@@ -246,14 +246,14 @@ class TestTools:
     """Tests for tool definitions."""
 
     def test_get_all_tools(self):
-        from src.tools import get_all_tools
+        from ato_core.tools import get_all_tools
 
         tools = get_all_tools()
         assert isinstance(tools, list)
         assert len(tools) > 0
 
     def test_get_file_tools(self):
-        from src.tools import get_file_tools
+        from ato_core.tools import get_file_tools
 
         tools = get_file_tools()
         assert len(tools) > 0
@@ -262,7 +262,7 @@ class TestTools:
         assert "write_file" in names
 
     def test_get_code_tools(self):
-        from src.tools import get_code_tools
+        from ato_core.tools import get_code_tools
 
         tools = get_code_tools()
         assert len(tools) > 0
@@ -270,25 +270,25 @@ class TestTools:
         assert "execute_command" in names
 
     def test_get_tools_for_role(self):
-        from src.tools import get_tools_for_role
+        from ato_core.tools import get_tools_for_role
 
         tools = get_tools_for_role(["read_file", "write_file"])
         assert len(tools) == 2
 
     def test_get_tools_for_role_empty(self):
-        from src.tools import get_tools_for_role
+        from ato_core.tools import get_tools_for_role
 
         tools = get_tools_for_role([])
         assert len(tools) == 0
 
     def test_get_tools_for_role_unknown(self):
-        from src.tools import get_tools_for_role
+        from ato_core.tools import get_tools_for_role
 
         tools = get_tools_for_role(["nonexistent_tool"])
         assert len(tools) == 0
 
     def test_tool_has_required_attributes(self):
-        from src.tools import get_all_tools
+        from ato_core.tools import get_all_tools
 
         for tool in get_all_tools():
             assert hasattr(tool, "name")
@@ -297,7 +297,7 @@ class TestTools:
             assert hasattr(tool, "execute")
 
     def test_file_tools_respect_explicit_project_root(self, tmp_path):
-        from src.tools.file_ops import ReadFileTool
+        from ato_core.tools.file_ops import ReadFileTool
 
         allowed = tmp_path / "allowed"
         allowed.mkdir()
@@ -318,7 +318,7 @@ class TestTools:
         assert "Access denied" in denied_result
 
     def test_code_tools_respect_explicit_project_root(self, tmp_path):
-        from src.tools.code_ops import ExecuteCommandTool
+        from ato_core.tools.code_ops import ExecuteCommandTool
 
         allowed = tmp_path / "allowed"
         allowed.mkdir()
@@ -347,7 +347,7 @@ class TestTaskDecomposer:
         pytest.importorskip("langchain_anthropic", reason="langchain-anthropic not installed")
 
     def test_build_system_prompt(self):
-        from src.prompts.task_decompose import TaskDecomposer
+        from ato_core.prompts.task_decompose import TaskDecomposer
 
         prompt = TaskDecomposer.build_system_prompt()
         assert "architect" in prompt
@@ -355,14 +355,14 @@ class TestTaskDecomposer:
         assert "JSON" in prompt
 
     def test_build_user_prompt(self):
-        from src.prompts.task_decompose import TaskDecomposer
+        from ato_core.prompts.task_decompose import TaskDecomposer
 
         prompt = TaskDecomposer.build_user_prompt("Build a login system")
         assert "Build a login system" in prompt
         assert "Example 1" in prompt
 
     def test_task_decomposition_result(self):
-        from src.prompts.task_decompose import TaskDecompositionResult
+        from ato_core.prompts.task_decompose import TaskDecompositionResult
 
         result = TaskDecompositionResult(
             task_id="task-001",
@@ -372,7 +372,7 @@ class TestTaskDecomposer:
         assert result.task_id == "task-001"
 
     def test_generate_task_id(self):
-        from src.prompts.task_decompose import TaskDecompositionResult
+        from ato_core.prompts.task_decompose import TaskDecompositionResult
 
         task_id = TaskDecompositionResult.generate_task_id()
         assert task_id.startswith("task-")
@@ -382,7 +382,7 @@ class TestGraphOrchestratorStatus:
     """Tests for shared graph state status transitions."""
 
     def test_merge_results_preserves_failed_subtask_status(self):
-        from src.orchestrator.base_orchestrator import BaseGraphOrchestrator
+        from ato_core.orchestrator.base_orchestrator import BaseGraphOrchestrator
 
         orchestrator = BaseGraphOrchestrator(db_path=":memory:")
         state = {
@@ -408,7 +408,7 @@ class TestGraphOrchestratorStatus:
         assert final_state["status"] == "failed"
 
     def test_supervisor_marks_blocked_pending_task_as_failed(self):
-        from src.orchestrator.base_orchestrator import BaseGraphOrchestrator
+        from ato_core.orchestrator.base_orchestrator import BaseGraphOrchestrator
 
         orchestrator = BaseGraphOrchestrator(db_path=":memory:")
         state = {
@@ -440,8 +440,8 @@ class TestToolEnabledOrchestrator:
     """Tests for tool-enabled orchestration helpers."""
 
     def test_langchain_tool_wrappers_call_the_matching_base_tool(self, tmp_path):
-        from src.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
-        from src.tools.base import BaseTool
+        from ato_core.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
+        from ato_core.tools.base import BaseTool
 
         class EchoTool(BaseTool):
             def __init__(self, name):
@@ -477,14 +477,14 @@ class TestTeamMemory:
     """Tests for team memory module."""
 
     def test_init_team_memory(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         assert memory.storage_path.exists()
         assert memory.db_path.exists()
 
     def test_set_and_get_context(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         memory.set_context("test_key", "test_value")
@@ -492,14 +492,14 @@ class TestTeamMemory:
         assert value == "test_value"
 
     def test_get_context_missing(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         value = memory.get_context("nonexistent")
         assert value is None
 
     def test_record_decision(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         decision = memory.record_decision(
@@ -511,7 +511,7 @@ class TestTeamMemory:
         assert decision.title == "Test Decision"
 
     def test_record_code_change(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         change = memory.record_code_change(
@@ -524,14 +524,14 @@ class TestTeamMemory:
         assert change.file_path == "src/main.py"
 
     def test_summary(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         summary = memory.summary()
         assert "Team Memory Summary" in summary
 
     def test_clear_memory(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         memory.set_context("key1", "value1")
@@ -539,7 +539,7 @@ class TestTeamMemory:
         assert memory.get_context("key1") is None
 
     def test_get_decisions(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         memory.record_decision(
@@ -556,7 +556,7 @@ class TestTeamMemory:
         assert len(decisions) == 2
 
     def test_retrieve_relevant_context_fallback(self, tmp_path):
-        from src.memory.team_memory import TeamMemory
+        from ato_core.memory.team_memory import TeamMemory
 
         memory = TeamMemory(project_root=str(tmp_path))
         context = memory.retrieve_relevant_context("test query")
@@ -568,7 +568,7 @@ class TestVisualization:
     """Tests for Mermaid visualization module."""
 
     def test_generate_mermaid_dag(self):
-        from src.visualization.mermaid import generate_mermaid_dag
+        from ato_core.visualization.mermaid import generate_mermaid_dag
 
         subtasks = [
             {
@@ -592,7 +592,7 @@ class TestVisualization:
         assert "st-2" in diagram
 
     def test_generate_mermaid_dag_with_status(self):
-        from src.visualization.mermaid import generate_mermaid_dag
+        from ato_core.visualization.mermaid import generate_mermaid_dag
 
         subtasks = [
             {
@@ -607,7 +607,7 @@ class TestVisualization:
         assert "[completed]" in diagram
 
     def test_generate_mermaid_timeline(self):
-        from src.visualization.mermaid import generate_mermaid_timeline
+        from ato_core.visualization.mermaid import generate_mermaid_timeline
 
         subtasks = [
             {"id": "st-1", "name": "Task 1", "role": "dev", "status": "completed"},
@@ -618,7 +618,7 @@ class TestVisualization:
         assert "Test Task" in timeline
 
     def test_generate_execution_report(self):
-        from src.visualization.mermaid import generate_execution_report
+        from ato_core.visualization.mermaid import generate_execution_report
 
         subtasks = [
             {
@@ -636,7 +636,7 @@ class TestVisualization:
         assert "Summary" in report
 
     def test_mermaid_visualizer(self):
-        from src.visualization.mermaid import MermaidVisualizer
+        from ato_core.visualization.mermaid import MermaidVisualizer
 
         subtasks = [
             {
