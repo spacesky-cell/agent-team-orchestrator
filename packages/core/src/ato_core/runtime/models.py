@@ -45,6 +45,16 @@ class ApprovalRequest(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class ApprovalDecision(BaseModel):
+    """A durable response to one approval request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    request_id: str
+    approved: bool
+    decided_at: datetime = Field(default_factory=utc_now)
+
+
 class TaskRecord(BaseModel):
     """Current persisted summary for one task."""
 

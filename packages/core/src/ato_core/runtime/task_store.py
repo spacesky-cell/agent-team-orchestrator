@@ -112,13 +112,20 @@ class TaskStore:
         _write_json_atomic(self.paths.state, record.model_dump(mode="json"))
 
     def transition(self, status: TaskStatus) -> TaskRecord:
+        return self.update(status=status)
+
+    def update(self, *, status: TaskStatus | None = None, **changes: Any) -> TaskRecord:
+        """Atomically update task fields and optionally validate a status transition."""
         record = self.read()
-        if status not in _TRANSITIONS[record.status]:
+        if status is not None and status not in _TRANSITIONS[record.status]:
             raise TaskStoreError(
                 "INVALID_TASK_TRANSITION",
                 f"cannot transition {record.status} -> {status}",
             )
-        updated = record.model_copy(update={"status": status, "updated_at": utc_now()})
+        updates = {**changes, "updated_at": utc_now()}
+        if status is not None:
+            updates["status"] = status
+        updated = record.model_copy(update=updates)
         self.write(updated)
         return updated
 
