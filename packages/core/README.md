@@ -1,35 +1,25 @@
-# ATO Core
+# ato-core
 
-Core Python package for Agent Team Orchestrator.
+Python owner layer for Agent Team Orchestrator. It provides task persistence, LangGraph execution, tool policy, durable approvals, packaged roles, memory, and the stable JSON bridge used by the npm adapters.
 
-## Installation
+## Install
 
 ```bash
-pip install -e .
+pip install ato-core
 ```
 
-## Usage
+## Verify
 
-```python
-from ato_core.orchestrator import SimpleOrchestrator
-
-# Initialize orchestrator
-orchestrator = SimpleOrchestrator()
-
-# Decompose a task
-decomposition = orchestrator.decompose_task("开发一个简单的用户登录功能")
-
-# Execute the task
-result = orchestrator.execute_task(decomposition)
-
-# Save artifacts
-orchestrator.save_artifacts(result.artifacts, "./ato-output")
+```bash
+python -c "import ato_core; print(ato_core.__version__)"
+echo '{}' | python -m ato_core.bridge doctor
+echo '{}' | python -m ato_core.bridge roles-list
 ```
 
-## Environment Variables
+On Windows, the bridge accepts UTF-8 stdin with or without a BOM.
 
-- `LLM_PROVIDER`: Provider to use (anthropic, openai, ollama). Default: anthropic
-- `LLM_MODEL`: Model name. Default: claude-sonnet-4-20250514
-- `ANTHROPIC_API_KEY`: Anthropic API key (if using LLM_PROVIDER=anthropic)
-- `OPENAI_API_KEY`: OpenAI API key (if using LLM_PROVIDER=openai)
-- `OLLAMA_BASE_URL`: Ollama base URL (if using LLM_PROVIDER=ollama)
+## Configuration
+
+The default `LLM_PROVIDER=claude-cli` reuses an authenticated Claude Code CLI. Anthropic, OpenAI-compatible, and Ollama providers are also supported through environment variables documented in the repository [.env.example](../../.env.example).
+
+Most users should install the root npm package as well and operate ATO through `ato` or `ato-mcp`. The Python bridge is a machine protocol; human diagnostics belong on stderr.

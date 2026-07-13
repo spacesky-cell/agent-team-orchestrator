@@ -22,15 +22,18 @@ jobs:
       - run: python -m pip install -e "packages/core[dev]"
       - run: pnpm install --frozen-lockfile
       - run: pnpm run verify
+      - run: bash scripts/e2e/cold-install.sh
       - run: python -m build packages/core
       - run: mkdir -p release-artifacts
-      - run: pnpm --filter @spacesky-cell/ato-shared pack --pack-destination ../../release-artifacts
-      - run: pnpm --filter @spacesky-cell/ato-cli pack --pack-destination ../../release-artifacts
-      - run: pnpm --filter @spacesky-cell/ato-mcp-server pack --pack-destination ../../release-artifacts
+      - run: cd packages/shared && pnpm pack --pack-destination ../../release-artifacts
+      - run: cd packages/cli && pnpm pack --pack-destination ../../release-artifacts
+      - run: cd packages/mcp-server && pnpm pack --pack-destination ../../release-artifacts
       - run: pnpm pack --pack-destination release-artifacts
+      - run: node scripts/release/build-manifest.mjs packages/core/dist release-artifacts release-manifest.json
       - uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
           path: |
             packages/core/dist/*
             release-artifacts/*
+            release-manifest.json

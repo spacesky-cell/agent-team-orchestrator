@@ -51,6 +51,26 @@ jobs:
       - run: pnpm exec vitest run --coverage --passWithNoTests
       - run: pnpm run build
 
+  cold-install:
+    name: Linux cold install
+    needs: [python, node]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: python -m pip install build
+      - run: pnpm install --frozen-lockfile
+      - run: bash scripts/e2e/cold-install.sh
+
   windows-smoke:
     name: Windows smoke
     runs-on: windows-latest

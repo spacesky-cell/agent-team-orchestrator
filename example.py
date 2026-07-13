@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Load .env file
 load_dotenv()
 
-from src.orchestrator.simple_orchestrator import SimpleOrchestrator
+from ato_core import SimpleOrchestrator
 
 
 def main():

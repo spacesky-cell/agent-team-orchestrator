@@ -51,7 +51,9 @@ an individual is officially representing the community in public spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at **[your-email@example.com]**.
+reported through the contact methods listed on the
+[repository owner's GitHub profile](https://github.com/spacesky-cell). For urgent abuse or
+safety concerns, use [GitHub's private support form](https://support.github.com/contact/report-abuse).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

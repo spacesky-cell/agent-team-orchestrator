@@ -1,0 +1,15 @@
+{
+  "task_id": "task-demo",
+  "description": "Review a repository and verify a reliability improvement",
+  "status": "completed",
+  "created_at": "2026-07-13T00:00:00Z",
+  "updated_at": "2026-07-13T00:02:00Z",
+  "project_root": ".",
+  "output_dir": "ato-output/tasks/task-demo",
+  "completed_subtasks": 2,
+  "total_subtasks": 2,
+  "active_approval": null,
+  "last_error": null,
+  "worker_pid": null,
+  "heartbeat_at": "2026-07-13T00:02:00Z"
+}

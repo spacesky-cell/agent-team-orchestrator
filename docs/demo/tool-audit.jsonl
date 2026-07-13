@@ -1,0 +1,4 @@
+{"timestamp":"2026-07-13T00:00:30Z","task_id":"task-demo","subtask_id":"inspect","role":"Architect","tool_name":"read_file","args_summary":{"path":"README.md"},"decision":"auto_allowed","status":"completed","duration_ms":3}
+{"timestamp":"2026-07-13T00:01:00Z","task_id":"task-demo","subtask_id":"verify","role":"Test Engineer","tool_name":"run_tests","args_summary":{"path":"."},"decision":"requires_approval","status":"requested","duration_ms":0}
+{"timestamp":"2026-07-13T00:01:15Z","task_id":"task-demo","subtask_id":"verify","role":"Test Engineer","tool_name":"run_tests","args_summary":{"path":"."},"decision":"approved","status":"approved","duration_ms":0}
+{"timestamp":"2026-07-13T00:02:00Z","task_id":"task-demo","subtask_id":"verify","role":"Test Engineer","tool_name":"run_tests","args_summary":{"path":"."},"decision":"approved","status":"completed","duration_ms":42000}

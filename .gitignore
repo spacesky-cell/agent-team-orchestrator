@@ -15,6 +15,7 @@ build/
 .coverage
 htmlcov/
 coverage/
+release-artifacts/
 .tox/
 .mypy_cache/
 

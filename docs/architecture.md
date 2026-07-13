@@ -1,62 +1,48 @@
-# ATO Architecture
+# Architecture
 
-## Claude Code MCP Flow
+ATO has one owner layer and two adapters.
 
-ATO exposes a project-level MCP server that lets Claude Code call into the local orchestrator without committing secrets:
+```mermaid
+flowchart LR
+    CLI[CLI adapter] --> Bridge[python -m ato_core.bridge]
+    MCP[MCP stdio adapter] --> Bridge
+    Bridge --> Service[TaskService]
+    Service --> Store[TaskStore]
+    Service --> Worker[TaskWorker]
+    Worker --> Graph[ToolEnabledOrchestrator]
+    Graph --> Checkpoint[(SQLite checkpoint)]
+    Graph --> Policy[ToolPolicy + ApprovalStore]
+    Policy --> Store
+```
+
+## Ownership
+
+`ato_core` owns task IDs, state transitions, decomposition validation, parallel graph execution, tool policy, approval decisions, audit events, worker health, memory, and bridge schemas.
+
+TypeScript owns Python discovery, process transport, CLI rendering, MCP schemas, and protocol error mapping. It never infers business status from checkpoint or result files.
+
+## Task lifecycle
 
 ```text
-Claude Code
-  -> ATO MCP server (TypeScript stdio)
-  -> @spacesky-cell/ato-shared Python runner
-  -> Python ToolEnabledOrchestrator
-  -> Claude Code CLI or API LLM provider
-  -> role-scoped project tools
-  -> result.json + tool-audit.jsonl
+queued -> decomposing -> running -> completed
+                            |  |
+                            |  +-> failed
+                            +-> waiting_approval -> running
+                                                   or blocked
 ```
 
-## Structured Claude CLI Tool Bridge
+Transitions are validated and written atomically to `task.json`. Terminal results are written only for `completed`, `blocked`, or `failed` tasks.
 
-The `claude-cli` provider does not expose native LangChain `tool_calls`, so ATO uses a small JSON protocol inside the Python orchestrator:
+## Parallel execution
 
-```json
-{"type":"tool_call","name":"read_file","args":{"path":"README.md"}}
-```
+The supervisor identifies dependency-ready subtasks and dispatches each through a LangGraph `Send` branch. A branch returns only a reducer-safe `SubtaskExecutionResult`. The supervisor applies each execution ID once, preventing concurrent writes to canonical artifacts and subtask state.
 
-```json
-{"type":"final","content":"final deliverable"}
-```
+## Approval resume
 
-The orchestrator owns parsing, policy checks, execution, and loop control. MCP and CLI remain adapters: they start tasks and display state, but they do not decide whether a tool is safe.
+Mutating tool calls receive a deterministic request key for node replay. The request is appended before LangGraph `interrupt()`. A separate process persists the exact decision, then invokes the same checkpoint with `Command(resume=...)`. Request IDs are validated before a tool executes; approved tools execute once and rejected tasks become blocked.
 
-## Tool Policy
+## Process boundary
 
-Read-only tools run automatically by default:
+The bridge accepts one UTF-8 JSON object on stdin and emits one JSON response for one-shot commands. It also tolerates the UTF-8 BOM produced by some Windows stdin writers. The Node client requires exactly one response line and treats additional human text as `BRIDGE_PROTOCOL_ERROR`.
 
-- `read_file`
-- `list_directory`
-- `search_code`
-- `analyze_file`
-
-Restricted tools require explicit local auto-approval in non-interactive runs:
-
-- `write_file`
-- `delete_file`
-- `execute_command`
-- `run_tests`
-- `git_commit`
-
-Set `ATO_AUTO_APPROVE_TOOLS=1` only for trusted local debugging. Without it, restricted tool requests return a structured blocked result and fail the subtask instead of hanging.
-
-## Audit Trail
-
-Every tool attempt is appended to `tool-audit.jsonl` in the task output directory. Each event records the task, subtask, role, tool name, redacted argument summary, policy decision, status, duration, and error when present.
-
-Use these entrypoints to inspect it:
-
-```bash
-node packages/cli/dist/index.js audit --output ./ato-output
-```
-
-```text
-get_task_audit(outputDir: "./ato-output")
-```
+Background workers are launched with argument arrays and `shell=false`. Heartbeat and PID checks occur on status reads; there is no unbounded health polling thread.
