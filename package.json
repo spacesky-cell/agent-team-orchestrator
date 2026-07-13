@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Agent Team Orchestrator - Multi-agent collaboration system powered by LangGraph",
   "type": "module",
+  "bin": {
+    "ato": "bin/ato.js",
+    "ato-mcp": "bin/ato-mcp.js"
+  },
   "workspaces": [
     "packages/*"
   ],
@@ -20,16 +24,21 @@
     "ai",
     "orchestration"
   ],
-  "author": "",
+  "author": "spacesky-cell",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
   "files": [
+    "bin",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
   ],
+  "dependencies": {
+    "@spacesky-cell/ato-cli": "workspace:0.1.0",
+    "@spacesky-cell/ato-mcp-server": "workspace:0.1.0"
+  },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",
     "eslint": "^9.0.0",
@@ -38,6 +47,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spacesky-cell/agent-team-orchestrator.git"
+  },
+  "homepage": "https://github.com/spacesky-cell/agent-team-orchestrator#readme",
+  "bugs": {
+    "url": "https://github.com/spacesky-cell/agent-team-orchestrator/issues"
   },
   "packageManager": "pnpm@9.0.0"
 }

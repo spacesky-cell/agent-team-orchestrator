@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./bin": {
+      "types": "./dist/bin.d.ts",
+      "import": "./dist/bin.js"
     }
   },
   "bin": {
@@ -23,9 +27,8 @@
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
-    "@spacesky-cell/ato-shared": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "zod": "^3.22.0"
+    "@spacesky-cell/ato-shared": "workspace:0.1.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -42,5 +45,13 @@
     "dist",
     "LICENSE",
     "README.md"
-  ]
+  ],
+  "engines": { "node": ">=18.0.0" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spacesky-cell/agent-team-orchestrator.git",
+    "directory": "packages/mcp-server"
+  },
+  "homepage": "https://github.com/spacesky-cell/agent-team-orchestrator#readme",
+  "bugs": { "url": "https://github.com/spacesky-cell/agent-team-orchestrator/issues" }
 }

@@ -33,5 +33,13 @@
   },
   "keywords": ["types", "shared"],
   "author": "ATO Contributors",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": { "node": ">=18.0.0" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spacesky-cell/agent-team-orchestrator.git",
+    "directory": "packages/shared"
+  },
+  "homepage": "https://github.com/spacesky-cell/agent-team-orchestrator#readme",
+  "bugs": { "url": "https://github.com/spacesky-cell/agent-team-orchestrator/issues" }
 }
