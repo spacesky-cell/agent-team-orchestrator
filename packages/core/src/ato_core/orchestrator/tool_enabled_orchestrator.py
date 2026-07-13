@@ -51,7 +51,9 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
         self.project_root = Path(project_root).resolve()
         self._allowed_dirs = [self.project_root]
         self._tool_registry = {t.name: t for t in get_all_tools(allowed_dirs=self._allowed_dirs)}
-        self.audit_path = Path(audit_path) if audit_path else self.db_path.parent / "tool-audit.jsonl"
+        self.audit_path = (
+            Path(audit_path) if audit_path else self.db_path.parent / "tool-audit.jsonl"
+        )
         self.tool_policy = ToolPolicy()
         self.audit_logger = ToolAuditLogger(self.audit_path)
 
@@ -188,7 +190,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             console.print("\n[cyan]📚 Relevant context from team memory:[/]")
             console.print(f"[dim]{relevant[:800]}{'...' if len(relevant) > 800 else ''}[/]\n")
 
-    def _execute_agent_node(self, state: TeamState) -> TeamState:
+    def _execute_agent_state(self, state: TeamState) -> TeamState:
         """Execute a single subtask with tool-calling support (ReAct loop).
 
         Overrides base to add ReAct loop with tool calls.

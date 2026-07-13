@@ -14,7 +14,7 @@ from rich.prompt import Confirm
 
 from ..models.llm_provider import get_llm_provider
 from ..models.role import RoleLoader
-from ..models.state import SubtaskDef, TeamState
+from ..models.state import ExecutionBranch, SubtaskDef, SubtaskExecutionResult, TeamState
 
 # Load environment variables
 load_dotenv()
@@ -176,18 +176,22 @@ class BaseGraphOrchestrator:
 
     def _supervisor_node(self, state: TeamState) -> TeamState:
         """Supervisor node identifies ready subtasks."""
+        self._apply_execution_results(state)
         ready = self._find_ready(state)
         state["current_subtasks"] = [st["id"] for st in ready]
+        for subtask in ready:
+            self._update_status(state, subtask["id"], "running")
 
         completed = sum(1 for st in state["subtasks"] if st["status"] == "completed")
         total = len(state["subtasks"])
 
         if completed == total:
             state["status"] = "completed"
-        elif any(st["status"] == "failed" for st in state["subtasks"]):
-            state["status"] = "failed"
         elif ready:
             state["status"] = "running"
+        elif any(st["status"] == "failed" for st in state["subtasks"]):
+            self._mark_blocked_subtasks_failed(state)
+            state["status"] = "failed"
         else:
             state["status"] = "pending"
 
@@ -200,29 +204,59 @@ class BaseGraphOrchestrator:
         if all_done:
             return "merge_results"
 
-        ready = [
-            st
-            for st in state["subtasks"]
-            if st["status"] == "pending" and self._deps_satisfied(state, st)
-        ]
-
-        if not ready:
+        if not state["current_subtasks"]:
             self._mark_blocked_subtasks_failed(state)
             return "merge_results"
 
-        sends = []
-        for subtask in ready:
-            self._update_status(state, subtask["id"], "running")
+        sends: list[Send] = []
+        for subtask_id in state["current_subtasks"]:
+            subtask = next(item for item in state["subtasks"] if item["id"] == subtask_id)
             sends.append(
                 Send(
                     "execute_agent",
-                    {**state, "current_subtasks": [subtask["id"]]},
+                    {
+                        "task_id": state["task_id"],
+                        "subtask": copy.deepcopy(subtask),
+                        "subtasks": copy.deepcopy(state["subtasks"]),
+                        "artifacts": copy.deepcopy(state["artifacts"]),
+                    },
                 )
             )
 
         return sends
 
-    def _execute_agent_node(self, state: TeamState) -> TeamState:
+    def _execute_agent_node(
+        self, branch: ExecutionBranch
+    ) -> dict[str, list[SubtaskExecutionResult]]:
+        """Execute one branch and return only its reducer-safe delta."""
+        subtask = branch["subtask"]
+        local_state: TeamState = {
+            "task_id": branch["task_id"],
+            "subtasks": copy.deepcopy(branch["subtasks"]),
+            "artifacts": copy.deepcopy(branch["artifacts"]),
+            "messages": [],
+            "status": "running",
+            "current_subtasks": [subtask["id"]],
+            "execution_results": [],
+            "applied_execution_ids": [],
+        }
+        updated = self._execute_agent_state(local_state)
+        updated_subtask = next(
+            item for item in updated["subtasks"] if item["id"] == subtask["id"]
+        )
+        status = updated_subtask["status"]
+        if status not in {"completed", "failed"}:
+            status = "failed"
+        result: SubtaskExecutionResult = {
+            "execution_id": subtask["id"],
+            "subtask_id": subtask["id"],
+            "status": status,
+            "artifact": updated["artifacts"].get(subtask["id"], "Error: no artifact returned"),
+            "messages": updated["messages"],
+        }
+        return {"execution_results": [result]}
+
+    def _execute_agent_state(self, state: TeamState) -> TeamState:
         """Execute a single subtask.
 
         Override this method to add tool-calling, memory integration, etc.
@@ -272,6 +306,7 @@ Please provide your output according to your deliverables.
 
     def _merge_results_node(self, state: TeamState) -> TeamState:
         """Merge all results."""
+        self._apply_execution_results(state)
         failed = sum(1 for st in state["subtasks"] if st["status"] == "failed")
         completed = sum(1 for st in state["subtasks"] if st["status"] == "completed")
         total = len(state["subtasks"])
@@ -291,6 +326,18 @@ Please provide your output according to your deliverables.
         return state
 
     # ============ Helper Methods ============
+
+    def _apply_execution_results(self, state: TeamState) -> None:
+        """Apply each accumulated branch delta exactly once."""
+        applied = set(state.get("applied_execution_ids", []))
+        for result in state.get("execution_results", []):
+            if result["execution_id"] in applied:
+                continue
+            self._update_status(state, result["subtask_id"], result["status"])
+            state["artifacts"][result["subtask_id"]] = result["artifact"]
+            state["messages"].extend(result["messages"])
+            applied.add(result["execution_id"])
+        state["applied_execution_ids"] = sorted(applied)
 
     def _find_ready(self, state: TeamState) -> list[SubtaskDef]:
         """Find ready subtasks."""
@@ -361,4 +408,6 @@ Please provide your output according to your deliverables.
             "messages": [HumanMessage(content=f"Starting task: {task_id}")],
             "status": "pending",
             "current_subtasks": [],
+            "execution_results": [],
+            "applied_execution_ids": [],
         }
