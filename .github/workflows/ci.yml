@@ -12,6 +12,7 @@ jobs:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.12"]
     steps:
@@ -88,6 +89,7 @@ jobs:
           cache: pnpm
       - run: python -m pip install -e "packages/core[dev]"
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
       - run: python -m pytest packages/core/tests/bridge packages/core/tests/runtime/test_worker_launcher.py -q
       - run: pnpm --filter @spacesky-cell/ato-cli test -- package-entry.test.ts
       - run: pnpm --filter @spacesky-cell/ato-shared test -- python-discovery.test.ts bridge-client.test.ts

@@ -6,6 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+_WINDOWS_CREATION_FLAGS = int(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)) | int(
+    getattr(subprocess, "DETACHED_PROCESS", 0)
+)
+
 
 class WorkerLauncher:
     """Start an isolated Python worker without shell interpolation."""
@@ -34,7 +38,7 @@ class WorkerLauncher:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 close_fds=True,
-                creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS),
+                creationflags=_WINDOWS_CREATION_FLAGS,
             )
         else:
             process = subprocess.Popen(

@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run Git and subprocess tools against the configured project root with bounded output and timeouts.
 - Return success for `ato --version` without requiring Python discovery.
 - Remove the broken `src.*` import path and duplicate graph implementations.
+- Type-check worker launch flags on every platform and use the standard TOML parser when available.
 
 ### Security
 - Redact secret-like tool arguments before persistence and require explicit approval for mutating tools by default.

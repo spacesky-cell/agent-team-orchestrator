@@ -2,9 +2,15 @@
 
 import re
 import subprocess
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 from .base import BaseTool, ToolExecutionContext
 
@@ -521,10 +527,8 @@ class RunTestsTool(BaseTool):
             return "pytest"
         if (path / "pyproject.toml").exists():
             try:
-                import tomli
-
                 with open(path / "pyproject.toml", "rb") as f:
-                    config = tomli.load(f)
+                    config = tomllib.load(f)
                     if "tool" in config and "pytest" in config["tool"]:
                         return "pytest"
             except ImportError:
