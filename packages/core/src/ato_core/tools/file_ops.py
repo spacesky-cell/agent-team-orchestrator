@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, ClassVar, Dict
 
-from .base import BaseTool
+from .base import BaseTool, ToolExecutionContext
 
 # Security: Limit operations to specific directories
 ALLOWED_DIRS = [
@@ -38,6 +38,20 @@ def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -
         except ValueError:
             continue
     return False
+
+
+def _context_dirs(
+    context: ToolExecutionContext | None,
+    fallback: list[Path],
+) -> list[Path]:
+    return list(context.allowed_dirs) if context is not None else fallback
+
+
+def _resolve_path(value: str | Path, context: ToolExecutionContext | None) -> Path:
+    path = Path(value)
+    if not path.is_absolute() and context is not None:
+        path = context.project_root / path
+    return path.resolve()
 
 
 class ReadFileTool(BaseTool):
@@ -89,10 +103,11 @@ class ReadFileTool(BaseTool):
         start_line = kwargs.get("start_line")
         end_line = kwargs.get("end_line")
 
-        file_path = Path(path).resolve()
+        context = kwargs.get("context")
+        file_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(file_path, self.allowed_dirs):
+        if not _is_path_allowed(file_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         # Check existence
@@ -175,10 +190,11 @@ class WriteFileTool(BaseTool):
         encoding = kwargs.get("encoding", "utf-8")
         mode = kwargs.get("mode", "write")
 
-        file_path = Path(path).resolve()
+        context = kwargs.get("context")
+        file_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(file_path, self.allowed_dirs):
+        if not _is_path_allowed(file_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         # Create parent directories if needed
@@ -239,10 +255,11 @@ class ListDirectoryTool(BaseTool):
         recursive = kwargs.get("recursive", False)
         pattern = kwargs.get("pattern")
 
-        dir_path = Path(path).resolve()
+        context = kwargs.get("context")
+        dir_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(dir_path, self.allowed_dirs):
+        if not _is_path_allowed(dir_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {dir_path} is outside allowed directories"
 
         if not dir_path.exists():
@@ -305,10 +322,11 @@ class DeleteFileTool(BaseTool):
             Success message or error.
         """
         path = kwargs.get("path")
-        file_path = Path(path).resolve()
+        context = kwargs.get("context")
+        file_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(file_path, self.allowed_dirs):
+        if not _is_path_allowed(file_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         if not file_path.exists():

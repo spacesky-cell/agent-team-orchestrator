@@ -1,7 +1,19 @@
 """Base tool interface for Agent Team Orchestrator."""
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, ClassVar, Dict
+
+
+@dataclass(frozen=True)
+class ToolExecutionContext:
+    """Immutable task and filesystem boundary supplied by the runtime."""
+
+    task_id: str
+    subtask_id: str
+    project_root: Path
+    allowed_dirs: tuple[Path, ...]
 
 
 class BaseTool(ABC):

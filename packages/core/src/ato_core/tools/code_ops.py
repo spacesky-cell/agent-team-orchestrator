@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List
 
-from .base import BaseTool
+from .base import BaseTool, ToolExecutionContext
 
 # Allowed directories for code operations
 ALLOWED_DIRS = [Path.cwd()]
@@ -27,6 +27,20 @@ def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -
         except ValueError:
             continue
     return False
+
+
+def _context_dirs(
+    context: ToolExecutionContext | None,
+    fallback: list[Path],
+) -> list[Path]:
+    return list(context.allowed_dirs) if context is not None else fallback
+
+
+def _resolve_path(value: str | Path, context: ToolExecutionContext | None) -> Path:
+    path = Path(value)
+    if not path.is_absolute() and context is not None:
+        path = context.project_root / path
+    return path.resolve()
 
 
 class SearchCodeTool(BaseTool):
@@ -86,10 +100,11 @@ class SearchCodeTool(BaseTool):
         case_sensitive = kwargs.get("case_sensitive", False)
         max_results = kwargs.get("max_results", 50)
 
-        search_path = Path(path).resolve()
+        context = kwargs.get("context")
+        search_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(search_path, self.allowed_dirs):
+        if not _is_path_allowed(search_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {search_path} is outside allowed directories"
 
         # Try ripgrep first (faster)
@@ -211,11 +226,6 @@ class ExecuteCommandTool(BaseTool):
             "command": {"type": "string", "description": "Command to execute"},
             "cwd": {"type": "string", "default": ".", "description": "Working directory"},
             "timeout": {"type": "integer", "default": 60, "description": "Timeout in seconds"},
-            "safe_mode": {
-                "type": "boolean",
-                "default": True,
-                "description": "Enable safe mode (blocks dangerous commands)",
-            },
         },
         "required": ["command"],
     }
@@ -243,26 +253,23 @@ class ExecuteCommandTool(BaseTool):
             command: Command to execute.
             cwd: Working directory.
             timeout: Timeout in seconds.
-            safe_mode: Enable safety checks.
-
         Returns:
             Command output.
         """
         command = kwargs.get("command", "")
         cwd = kwargs.get("cwd", ".")
         timeout = kwargs.get("timeout", 60)
-        safe_mode = kwargs.get("safe_mode", True)
+        context = kwargs.get("context")
 
         # Safety check
-        if safe_mode:
-            for pattern in self.BLOCKED_PATTERNS:
-                if re.search(pattern, command, re.IGNORECASE):
-                    return f"Error: Command blocked for safety - contains pattern '{pattern}'"
+        for pattern in self.BLOCKED_PATTERNS:
+            if re.search(pattern, command, re.IGNORECASE):
+                return f"Error: Command blocked for safety - contains pattern '{pattern}'"
 
-        work_dir = Path(cwd).resolve()
+        work_dir = _resolve_path(cwd, context)
 
         # Security check
-        if not _is_path_allowed(work_dir, self.allowed_dirs):
+        if not _is_path_allowed(work_dir, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {work_dir} is outside allowed directories"
 
         try:
@@ -327,10 +334,11 @@ class AnalyzeFileTool(BaseTool):
             File analysis string.
         """
         path = kwargs.get("path")
-        file_path = Path(path).resolve()
+        context = kwargs.get("context")
+        file_path = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(file_path, self.allowed_dirs):
+        if not _is_path_allowed(file_path, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {file_path} is outside allowed directories"
 
         if not file_path.exists():
@@ -436,10 +444,11 @@ class RunTestsTool(BaseTool):
         test_path = kwargs.get("test_path")
         verbose = kwargs.get("verbose", False)
 
-        work_dir = Path(path).resolve()
+        context = kwargs.get("context")
+        work_dir = _resolve_path(path, context)
 
         # Security check
-        if not _is_path_allowed(work_dir, self.allowed_dirs):
+        if not _is_path_allowed(work_dir, _context_dirs(context, self.allowed_dirs)):
             return f"Error: Access denied - {work_dir} is outside allowed directories"
 
         # Detect test framework
@@ -585,6 +594,11 @@ class GitCommitTool(BaseTool):
         """
         message = kwargs.get("message", "")
         dry_run = kwargs.get("dry_run", False)
+        context: ToolExecutionContext | None = kwargs.get("context")
+        work_dir = context.project_root.resolve() if context is not None else Path.cwd().resolve()
+
+        if not _is_path_allowed(work_dir, _context_dirs(context, self.allowed_dirs)):
+            return f"Error: Access denied - {work_dir} is outside allowed directories"
 
         # Check if we're in a git repo
         try:
@@ -593,6 +607,7 @@ class GitCommitTool(BaseTool):
                 capture_output=True,
                 check=True,
                 timeout=5,
+                cwd=work_dir,
             )
         except (subprocess.CalledProcessError, FileNotFoundError):
             return "Error: Not in a git repository"
@@ -604,6 +619,7 @@ class GitCommitTool(BaseTool):
                 capture_output=True,
                 text=True,
                 timeout=5,
+                cwd=work_dir,
             )
             if not result.stdout.strip():
                 return "Error: No staged changes. Use 'git add' to stage files first."
@@ -618,6 +634,7 @@ class GitCommitTool(BaseTool):
                     capture_output=True,
                     text=True,
                     timeout=10,
+                    cwd=work_dir,
                 )
                 return (
                     f"[Dry run] Would commit with message:\n"
@@ -638,6 +655,7 @@ class GitCommitTool(BaseTool):
                     capture_output=True,
                     text=True,
                     timeout=10,
+                    cwd=work_dir,
                 ),
             )
 
@@ -648,6 +666,7 @@ class GitCommitTool(BaseTool):
                     capture_output=True,
                     text=True,
                     timeout=5,
+                    cwd=work_dir,
                 )
                 commit_hash = hash_result.stdout.strip()
 

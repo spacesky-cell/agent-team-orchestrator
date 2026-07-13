@@ -10,6 +10,8 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 from ..memory.team_memory import TeamMemory
 from ..models.state import SubtaskDef, TeamState
 from ..tools import get_all_tools, get_tools_for_role
+from ..tools.base import ToolExecutionContext
+from ..tools.schema import pydantic_model_for_tool
 from .base_orchestrator import BaseGraphOrchestrator
 from .claude_cli_tools import (
     ToolResponseParseError,
@@ -73,38 +75,14 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             List of LangChain-compatible tools.
         """
         from langchain_core.tools import tool as langchain_tool
-        from pydantic import ConfigDict, create_model
-
         langchain_tools = []
 
         for tool in tools:
-            properties = tool.parameters.get("properties", {})
-            required = tool.parameters.get("required", [])
+            args_model = pydantic_model_for_tool(tool.parameters, f"{tool.name}Args")
 
-            fields = {}
-            for field_name, field_info in properties.items():
-                field_type = str
-                if field_info.get("type") == "integer":
-                    field_type = int
-                elif field_info.get("type") == "boolean":
-                    field_type = bool
-                elif field_info.get("type") == "number":
-                    field_type = float
-
-                if field_name not in required:
-                    field_type = field_type | None
-
-                fields[field_name] = (field_type, field_info.get("description", ""))
-
-            args_model = create_model(
-                f"{tool.name}Args",
-                __config__=ConfigDict(extra="forbid"),
-                **fields,
-            )
-
-            def make_tool_func(base_tool):
+            def make_tool_func(base_tool, argument_model):
                 """Wrapper function."""
-                @langchain_tool(args_schema=args_model)
+                @langchain_tool(args_schema=argument_model)
                 def tool_func(**kwargs):
                     """Wrapper function."""
                     return asyncio.run(base_tool.execute(**kwargs))
@@ -113,7 +91,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
                 tool_func.description = base_tool.description
                 return tool_func
 
-            langchain_tools.append(make_tool_func(tool))
+            langchain_tools.append(make_tool_func(tool, args_model))
 
         return langchain_tools
 
@@ -443,7 +421,13 @@ You have access to tools - use them if needed to complete your task.
 
         started = time.perf_counter()
         try:
-            tool_result = asyncio.run(tool.execute(**tool_args))
+            context = ToolExecutionContext(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                project_root=self.project_root,
+                allowed_dirs=tuple(self._allowed_dirs),
+            )
+            tool_result = asyncio.run(tool.execute(context=context, **tool_args))
             duration_ms = int((time.perf_counter() - started) * 1000)
             status = "failed" if str(tool_result).startswith("Error:") else "completed"
             audit_logger.record(
