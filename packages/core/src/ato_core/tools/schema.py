@@ -1,6 +1,6 @@
 """Convert the canonical tool JSON schemas into Pydantic models."""
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
@@ -39,4 +39,11 @@ def pydantic_model_for_tool(schema: dict[str, Any], model_name: str) -> type[Bas
             Field(default=default, description=field_schema.get("description")),
         )
 
-    return create_model(model_name, __config__=ConfigDict(extra="forbid"), **fields)
+    return cast(
+        type[BaseModel],
+        create_model(  # type: ignore[call-overload]
+            model_name,
+            __config__=ConfigDict(extra="forbid"),
+            **fields,
+        ),
+    )

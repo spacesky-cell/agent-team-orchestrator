@@ -9,7 +9,7 @@
     "test": "pytest",
     "format": "black src/",
     "lint": "ruff check src/",
-    "clean": "rm -rf __pycache__ *.pyc dist build *.egg-info"
+    "clean": "node ../../scripts/clean-package.mjs dist build"
   },
   "keywords": ["agent", "langgraph", "ai", "orchestration", "python"],
   "author": "ATO Contributors",

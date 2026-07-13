@@ -1,6 +1,6 @@
 """Mermaid diagram generation for task execution visualization."""
 
-from typing import Literal
+from typing import Any, Literal
 
 # Valid task statuses
 TaskStatus = Literal["pending", "running", "completed", "failed"]
@@ -24,7 +24,7 @@ STATUS_STYLES = {
 
 
 def generate_mermaid_dag(
-    subtasks: list[dict],
+    subtasks: list[dict[str, Any]],
     layout: str = "TD",
     show_status: bool = False,
 ) -> str:
@@ -75,7 +75,7 @@ def generate_mermaid_dag(
 
 
 def generate_mermaid_timeline(
-    subtasks: list[dict],
+    subtasks: list[dict[str, Any]],
     task_name: str = "Task Execution",
 ) -> str:
     """Generate Mermaid timeline diagram from subtasks.
@@ -92,7 +92,7 @@ def generate_mermaid_timeline(
     lines.append("    dateFormat  HH:mm:ss")
 
     # Group by role
-    roles = {}
+    roles: dict[str, list[dict[str, Any]]] = {}
     for subtask in subtasks:
         role = subtask.get("role", "unknown")
         if role not in roles:
@@ -166,7 +166,7 @@ def generate_mermaid_state_diagram(
 
 def generate_execution_report(
     task_id: str,
-    subtasks: list[dict],
+    subtasks: list[dict[str, Any]],
     artifacts: dict[str, object] | None = None,
 ) -> str:
     """Generate a Markdown execution report with visualizations.
@@ -251,21 +251,21 @@ class MermaidVisualizer:
     """Helper class for generating Mermaid diagrams."""
 
     @staticmethod
-    def dag(subtasks: list[dict], **kwargs) -> str:
+    def dag(subtasks: list[dict[str, Any]], **kwargs: Any) -> str:
         """Generate DAG diagram."""
         return generate_mermaid_dag(subtasks, **kwargs)
 
     @staticmethod
-    def timeline(subtasks: list[dict], task_name: str = "Task") -> str:
+    def timeline(subtasks: list[dict[str, Any]], task_name: str = "Task") -> str:
         """Generate timeline diagram."""
         return generate_mermaid_timeline(subtasks, task_name)
 
     @staticmethod
-    def state_diagram(**kwargs) -> str:
+    def state_diagram(**kwargs: Any) -> str:
         """Generate state diagram."""
         return generate_mermaid_state_diagram(**kwargs)
 
     @staticmethod
-    def execution_report(task_id: str, subtasks: list[dict], **kwargs) -> str:
+    def execution_report(task_id: str, subtasks: list[dict[str, Any]], **kwargs: Any) -> str:
         """Generate full execution report."""
         return generate_execution_report(task_id, subtasks, **kwargs)

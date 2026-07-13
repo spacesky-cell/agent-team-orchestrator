@@ -28,6 +28,6 @@ class TaskResult(BaseModel):
 
     task_id: str = Field(..., description="Task identifier")
     status: str = Field(..., description="Status: pending, running, completed, failed")
-    current_subtask: Optional[Subtask] = Field(None, description="Currently executing subtask")
+    current_subtask: Optional[Subtask] = None
     artifacts: dict[str, object] = Field(default_factory=dict, description="Collected outputs")
-    error: Optional[str] = Field(None, description="Error message if failed")
+    error: Optional[str] = None

@@ -14,9 +14,7 @@ HEARTBEAT_TIMEOUT = timedelta(seconds=30)
 
 
 class Launcher(Protocol):
-    def start(
-        self, task_root: Path, resume: dict[str, object] | None = None
-    ) -> int: ...
+    def start(self, task_root: Path, resume: dict[str, object] | None = None) -> int: ...
 
 
 class TaskService:

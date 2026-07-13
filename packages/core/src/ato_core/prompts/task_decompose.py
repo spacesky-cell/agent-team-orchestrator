@@ -1,6 +1,7 @@
 """Task decomposition prompts for supervisor agent."""
 
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -86,7 +87,7 @@ class TaskDecompositionResult(BaseModel):
 
     task_id: str = Field(description="Unique task identifier")
     summary: str = Field(description="Brief summary of the task")
-    subtasks: list[dict] = Field(
+    subtasks: list[dict[str, Any]] = Field(
         default_factory=list,
         description="List of subtasks, each with id, name, role, dependencies, expected_output",
     )

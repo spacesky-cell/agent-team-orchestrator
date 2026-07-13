@@ -1,12 +1,14 @@
 """Agent Team Orchestrator - Core Python package."""
 
+from typing import Any
+
 __version__ = "0.1.0"
 
 # Lazy imports - these are only loaded when actually used
 # This prevents circular import issues and reduces initial load time
 
 
-def _get_orchestrator_classes():
+def _get_orchestrator_classes() -> dict[str, Any]:
     """Lazy load orchestrator classes."""
     from .orchestrator import (
         BaseGraphOrchestrator,
@@ -27,7 +29,7 @@ def _get_orchestrator_classes():
     }
 
 
-def _get_model_classes():
+def _get_model_classes() -> dict[str, Any]:
     """Lazy load model classes."""
     from .models import (
         Deliverable,
@@ -56,7 +58,7 @@ def _get_model_classes():
     }
 
 
-def _get_prompt_classes():
+def _get_prompt_classes() -> dict[str, Any]:
     """Lazy load prompt classes."""
     from .prompts import TaskDecomposer, TaskDecompositionResult
 
@@ -66,7 +68,7 @@ def _get_prompt_classes():
     }
 
 
-def _get_visualization_classes():
+def _get_visualization_classes() -> dict[str, Any]:
     """Lazy load visualization classes."""
     from .visualization import MermaidVisualizer, generate_execution_report
 
@@ -76,7 +78,7 @@ def _get_visualization_classes():
     }
 
 
-def _get_memory_classes():
+def _get_memory_classes() -> dict[str, Any]:
     """Lazy load memory classes."""
     from .memory import CodeChange, DecisionRecord, TeamMemory
 
@@ -87,7 +89,7 @@ def _get_memory_classes():
     }
 
 
-def _get_tool_functions():
+def _get_tool_functions() -> dict[str, Any]:
     """Lazy load tool functions."""
     from .tools import get_all_tools, get_code_tools, get_file_tools
 
@@ -102,7 +104,7 @@ def _get_tool_functions():
 class _LazyModule:
     """Lazy module accessor."""
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         # Try each category
         for getter in [
             _get_orchestrator_classes,
@@ -122,9 +124,10 @@ class _LazyModule:
 _lazy = _LazyModule()
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Resolve public exports lazily at module level."""
     return _lazy.__getattr__(name)
+
 
 # Export everything through lazy accessor for package-level imports
 __all__ = [

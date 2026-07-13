@@ -21,8 +21,8 @@ class LLMConfig(BaseModel):
         description="Provider: claude-cli, anthropic, openai, ollama",
     )
     model: str = Field(default="claude-sonnet-4-20250514", description="Model name")
-    api_key: Optional[str] = Field(None, description="API key (will use env var if not set)")
-    base_url: Optional[str] = Field(None, description="Base URL for custom endpoints")
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
     temperature: float = Field(default=0.7, ge=0, le=2)
     max_tokens: int = Field(default=4096, ge=1)
 
@@ -32,10 +32,10 @@ class BaseLLMProvider(ABC):
 
     def __init__(self, config: LLMConfig):
         self.config = config
-        self._llm = None
+        self._llm: Any = None
 
     @abstractmethod
-    def get_llm(self):
+    def get_llm(self) -> Any:
         """Get the LangChain LLM instance."""
         pass
 
@@ -43,7 +43,7 @@ class BaseLLMProvider(ABC):
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic Claude provider."""
 
-    def get_llm(self):
+    def get_llm(self) -> Any:
         if self._llm is None:
             api_key = self.config.api_key or os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
@@ -51,9 +51,9 @@ class AnthropicProvider(BaseLLMProvider):
                     "ANTHROPIC_API_KEY not set. " "Please set it in environment or config."
                 )
 
-            self._llm = ChatAnthropic(
+            self._llm = ChatAnthropic(  # type: ignore[call-arg]
                 model=self.config.model,
-                api_key=api_key,
+                api_key=api_key,  # type: ignore[arg-type]
                 temperature=self.config.temperature,
                 max_tokens_to_sample=self.config.max_tokens,
             )
@@ -63,7 +63,7 @@ class AnthropicProvider(BaseLLMProvider):
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI provider."""
 
-    def get_llm(self):
+    def get_llm(self) -> Any:
         if self._llm is None:
             api_key = self.config.api_key or os.getenv("OPENAI_API_KEY")
             if not api_key:
@@ -72,9 +72,9 @@ class OpenAIProvider(BaseLLMProvider):
             # Support custom base URL from config or environment
             base_url = self.config.base_url or os.getenv("OPENAI_BASE_URL")
 
-            self._llm = ChatOpenAI(
+            self._llm = ChatOpenAI(  # type: ignore[call-arg]
                 model=self.config.model,
-                api_key=api_key,
+                api_key=api_key,  # type: ignore[arg-type]
                 temperature=self.config.temperature,
                 max_tokens=self.config.max_tokens,
                 base_url=base_url,
@@ -85,19 +85,19 @@ class OpenAIProvider(BaseLLMProvider):
 class OllamaProvider(BaseLLMProvider):
     """Ollama provider for local models."""
 
-    def get_llm(self):
+    def get_llm(self) -> Any:
         if self._llm is None:
             # Ollama uses OpenAI-compatible API
             base_url = self.config.base_url or os.getenv(
                 "OLLAMA_BASE_URL", "http://localhost:11434/v1"
             )
 
-            self._llm = ChatOpenAI(
+            self._llm = ChatOpenAI(  # type: ignore[call-arg]
                 model=self.config.model,
                 temperature=self.config.temperature,
                 max_tokens=self.config.max_tokens,
                 base_url=base_url,
-                api_key="ollama",  # Ollama doesn't need a real key
+                api_key="ollama",  # type: ignore[arg-type]  # Ollama has no API key
             )
         return self._llm
 
@@ -107,14 +107,14 @@ class ClaudeCliChatModel:
 
     is_claude_cli = True
 
-    def __init__(self, timeout: int = 300):
+    def __init__(self, timeout: int = 300) -> None:
         self.timeout = timeout
 
-    def bind_tools(self, tools: list[Any]):
+    def bind_tools(self, tools: list[Any]) -> "ClaudeCliChatModel":
         """Return self because Claude CLI tool binding is not available here."""
         return self
 
-    def invoke(self, messages: list[BaseMessage] | str):
+    def invoke(self, messages: list[BaseMessage] | str) -> AIMessage:
         """Invoke `claude -p` and return an AIMessage-compatible response."""
         prompt = self._format_prompt(messages)
         claude_path = shutil.which("claude")
@@ -146,7 +146,9 @@ class ClaudeCliChatModel:
 
         return AIMessage(content=result.stdout.strip())
 
-    def invoke_json_schema(self, messages: list[BaseMessage] | str, schema: dict[str, Any]):
+    def invoke_json_schema(
+        self, messages: list[BaseMessage] | str, schema: dict[str, Any]
+    ) -> AIMessage:
         """Invoke Claude CLI with structured-output validation and return structured JSON."""
         prompt = self._format_prompt(messages)
         claude_path = shutil.which("claude")
@@ -209,7 +211,7 @@ class ClaudeCliChatModel:
 class ClaudeCliProvider(BaseLLMProvider):
     """Provider that reuses the locally authenticated Claude Code CLI."""
 
-    def get_llm(self):
+    def get_llm(self) -> Any:
         if self._llm is None:
             self._llm = ClaudeCliChatModel(timeout=int(os.getenv("CLAUDE_CLI_TIMEOUT", "300")))
         return self._llm
@@ -239,20 +241,18 @@ def get_llm_provider(config: Optional[LLMConfig] = None) -> BaseLLMProvider:
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.7")),
             max_tokens=int(os.getenv("LLM_MAX_TOKENS", "4096")),
             base_url=base_url,
+            api_key=None,
         )
 
-    providers = {
-        "anthropic": AnthropicProvider,
-        "claude-cli": ClaudeCliProvider,
-        "openai": OpenAIProvider,
-        "ollama": OllamaProvider,
-    }
-
-    provider_class = providers.get(config.provider)
-    if not provider_class:
-        raise ValueError(
-            f"Unknown provider: {config.provider}. "
-            f"Supported providers: {list(providers.keys())}"
-        )
-
-    return provider_class(config)
+    if config.provider == "anthropic":
+        return AnthropicProvider(config)
+    if config.provider == "claude-cli":
+        return ClaudeCliProvider(config)
+    if config.provider == "openai":
+        return OpenAIProvider(config)
+    if config.provider == "ollama":
+        return OllamaProvider(config)
+    raise ValueError(
+        f"Unknown provider: {config.provider}. "
+        "Supported providers: anthropic, claude-cli, openai, ollama"
+    )

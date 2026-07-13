@@ -26,20 +26,26 @@ class WorkerLauncher:
             args.extend(
                 ["--resume-json", json.dumps(resume, ensure_ascii=True, separators=(",", ":"))]
             )
-        kwargs: dict[str, object] = {
-            "shell": False,
-            "stdin": subprocess.DEVNULL,
-            "stdout": subprocess.DEVNULL,
-            "stderr": subprocess.DEVNULL,
-            "close_fds": True,
-        }
         if os.name == "nt":
-            kwargs["creationflags"] = (
-                subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            process = subprocess.Popen(
+                args,
+                shell=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+                creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS),
             )
         else:
-            kwargs["start_new_session"] = True
-        process = subprocess.Popen(args, **kwargs)
+            process = subprocess.Popen(
+                args,
+                shell=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+                start_new_session=True,
+            )
         return process.pid
 
 

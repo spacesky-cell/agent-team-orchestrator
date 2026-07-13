@@ -23,8 +23,8 @@
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "lint": "eslint src/",
-    "clean": "rm -rf dist node_modules"
+    "lint": "eslint src/ --max-warnings=0",
+    "clean": "node ../../scripts/clean-package.mjs dist"
   },
   "dependencies": {
     "@spacesky-cell/ato-shared": "workspace:0.1.0",

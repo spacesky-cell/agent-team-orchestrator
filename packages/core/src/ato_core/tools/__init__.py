@@ -1,5 +1,6 @@
 """Tools module for Agent Team Orchestrator."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from .base import BaseTool
@@ -37,7 +38,7 @@ __all__ = [
 ]
 
 
-def get_all_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
+def get_all_tools(allowed_dirs: Sequence[Path | str] | None = None) -> list[BaseTool]:
     """Get all available tools.
 
     Returns:
@@ -47,7 +48,7 @@ def get_all_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool
 
 
 def get_tools_for_role(
-    role_tools: list[str], allowed_dirs: list[Path | str] | None = None
+    role_tools: list[str], allowed_dirs: Sequence[Path | str] | None = None
 ) -> list[BaseTool]:
     """Get tools available for a specific role.
 

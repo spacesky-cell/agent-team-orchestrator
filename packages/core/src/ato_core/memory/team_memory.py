@@ -10,7 +10,7 @@ import logging
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -82,9 +82,9 @@ class TeamMemory:
         self._init_db()
 
         # ChromaDB for semantic search (optional)
-        self._chroma_client = None
-        self._decisions_collection = None
-        self._changes_collection = None
+        self._chroma_client: Any | None = None
+        self._decisions_collection: Any | None = None
+        self._changes_collection: Any | None = None
 
         if HAS_CHROMA:
             self._init_chroma()
@@ -145,10 +145,13 @@ class TeamMemory:
             )
 
             # Create collections
-            self._decisions_collection = self._chroma_client.get_or_create_collection(
+            client = self._chroma_client
+            if client is None:
+                raise RuntimeError("ChromaDB client initialization failed")
+            self._decisions_collection = client.get_or_create_collection(
                 name="decisions", metadata={"description": "Architecture decisions"}
             )
-            self._changes_collection = self._chroma_client.get_or_create_collection(
+            self._changes_collection = client.get_or_create_collection(
                 name="code_changes", metadata={"description": "Code change records"}
             )
         except Exception as e:
@@ -474,7 +477,7 @@ class TeamMemory:
         Returns:
             Formatted context string with relevant information.
         """
-        lines = []
+        lines: list[str] = []
 
         # Use ChromaDB for semantic search if available
         if self._decisions_collection is not None:

@@ -2,6 +2,7 @@
 
 import re
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List
 
@@ -11,13 +12,13 @@ from .base import BaseTool, ToolExecutionContext
 ALLOWED_DIRS = [Path.cwd()]
 
 
-def _normalize_allowed_dirs(allowed_dirs: list[Path | str] | None = None) -> list[Path]:
+def _normalize_allowed_dirs(allowed_dirs: Sequence[Path | str] | None = None) -> list[Path]:
     """Return resolved directories that tools may access."""
     dirs = allowed_dirs or ALLOWED_DIRS
     return [Path(directory).resolve() for directory in dirs]
 
 
-def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -> bool:
+def _is_path_allowed(path: Path, allowed_dirs: Sequence[Path | str] | None = None) -> bool:
     """Check if path is within allowed directories."""
     path = path.resolve()
     for allowed_dir in _normalize_allowed_dirs(allowed_dirs):
@@ -78,10 +79,10 @@ class SearchCodeTool(BaseTool):
         "required": ["query"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Search for patterns in code.
 
         Args:
@@ -243,10 +244,10 @@ class ExecuteCommandTool(BaseTool):
         r"wget.*\|\s*bash",
     ]
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Execute a shell command.
 
         Args:
@@ -321,10 +322,10 @@ class AnalyzeFileTool(BaseTool):
         "required": ["path"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Analyze a file.
 
         Args:
@@ -334,6 +335,8 @@ class AnalyzeFileTool(BaseTool):
             File analysis string.
         """
         path = kwargs.get("path")
+        if not isinstance(path, (str, Path)):
+            return "Error: path is required"
         context = kwargs.get("context")
         file_path = _resolve_path(path, context)
 
@@ -380,6 +383,7 @@ class AnalyzeFileTool(BaseTool):
         language = ext_to_lang.get(file_path.suffix.lower(), "Unknown")
 
         # Try to count count lines
+        lines: int | str
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
             lines = len(content.splitlines())
@@ -426,10 +430,10 @@ class RunTestsTool(BaseTool):
         "required": [],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Run test suite.
 
         Args:
@@ -579,10 +583,10 @@ class GitCommitTool(BaseTool):
         "required": ["message"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Create a git commit.
 
         Args:
@@ -678,7 +682,7 @@ class GitCommitTool(BaseTool):
 
 
 # Factory function
-def get_code_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
+def get_code_tools(allowed_dirs: Sequence[Path | str] | None = None) -> list[BaseTool]:
     """Get all code operation tools.
 
     Returns:

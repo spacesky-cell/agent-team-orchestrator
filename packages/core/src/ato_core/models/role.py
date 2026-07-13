@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from importlib.abc import Traversable
 from importlib import resources
+from importlib.abc import Traversable
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 from jsonschema import ValidationError, validate
@@ -59,13 +59,13 @@ class RoleLoader:
 
     def __init__(self, roles_dir: Optional[Path] = None):
         self.roles_dir: Path | Traversable = roles_dir or built_in_roles_dir()
-        self._schema: Optional[dict] = None
+        self._schema: Optional[dict[str, Any]] = None
 
     @property
-    def schema(self) -> dict:
+    def schema(self) -> dict[str, Any]:
         """Load and cache the JSON Schema for validation."""
         if self._schema is None:
-            schema_path = self.roles_dir.joinpath("schema", "role.schema.json")
+            schema_path = self.roles_dir.joinpath("schema").joinpath("role.schema.json")
             with schema_path.open("r", encoding="utf-8") as f:
                 self._schema = json.load(f)
         return self._schema

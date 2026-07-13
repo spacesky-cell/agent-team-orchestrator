@@ -4,22 +4,25 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
 
+from ato_core.models.state import SubtaskDef
+
 from .decomposition import validate_decomposition
-from .models import BridgeError, TaskRecord, utc_now
+from .models import BridgeError, TaskRecord, TaskStatus, utc_now
 from .task_store import TaskStore, TaskStoreError
 
 
 class WorkerRuntime(Protocol):
-    def decompose(self, description: str) -> list[dict[str, Any]]: ...
+    def decompose(self, description: str) -> list[SubtaskDef]: ...
 
     def execute(
         self,
         store: TaskStore,
-        subtasks: list[dict[str, Any]],
+        subtasks: list[SubtaskDef],
         resume: dict[str, object] | None = None,
     ) -> dict[str, Any]: ...
 
@@ -27,24 +30,26 @@ class WorkerRuntime(Protocol):
 class DefaultWorkerRuntime:
     """Connect persisted tasks to the existing decomposition and graph engines."""
 
-    def decompose(self, description: str) -> list[dict[str, Any]]:
+    def decompose(self, description: str) -> list[SubtaskDef]:
         from ato_core.models.role import RoleLoader
         from ato_core.orchestrator.simple_orchestrator import SimpleOrchestrator
 
         decomposition = SimpleOrchestrator().decompose_task(description)
         subtasks = [
-            {**item.model_dump(mode="json"), "status": "pending"}
-            for item in decomposition.subtasks
+            {**item.model_dump(mode="json"), "status": "pending"} for item in decomposition.subtasks
         ]
-        return validate_decomposition(
-            subtasks,
-            available_roles=set(RoleLoader().list_roles()),
+        return cast(
+            list[SubtaskDef],
+            validate_decomposition(
+                subtasks,
+                available_roles=set(RoleLoader().list_roles()),
+            ),
         )
 
     def execute(
         self,
         store: TaskStore,
-        subtasks: list[dict[str, Any]],
+        subtasks: list[SubtaskDef],
         resume: dict[str, object] | None = None,
     ) -> dict[str, Any]:
         from ato_core.orchestrator.tool_enabled_orchestrator import ToolEnabledOrchestrator
@@ -57,7 +62,7 @@ class DefaultWorkerRuntime:
             task_store=store,
         )
         graph = orchestrator._get_graph()
-        config = {"configurable": {"thread_id": record.task_id}}
+        config: RunnableConfig = {"configurable": {"thread_id": record.task_id}}
         graph_input: Any = (
             Command(resume=resume)
             if resume is not None
@@ -79,19 +84,15 @@ class TaskWorker:
             self.store.update(heartbeat_at=utc_now(), worker_pid=os.getpid())
             if resume is None:
                 if record.status != "queued":
-                    raise TaskStoreError(
-                        "TASK_NOT_RUNNABLE", f"task status is {record.status}"
-                    )
+                    raise TaskStoreError("TASK_NOT_RUNNABLE", f"task status is {record.status}")
                 self.store.transition("decomposing")
                 subtasks = self.runtime.decompose(record.description)
-                self.store.write_decomposition(subtasks)
+                self.store.write_decomposition(cast(list[dict[str, Any]], subtasks))
                 self.store.update(status="running", total_subtasks=len(subtasks))
             else:
                 if record.status not in {"running", "blocked"}:
-                    raise TaskStoreError(
-                        "TASK_NOT_RESUMABLE", f"task status is {record.status}"
-                    )
-                subtasks = self.store.read_decomposition()
+                    raise TaskStoreError("TASK_NOT_RESUMABLE", f"task status is {record.status}")
+                subtasks = cast(list[SubtaskDef], self.store.read_decomposition())
 
             result = self.runtime.execute(self.store, subtasks, resume=resume)
             current = self.store.read()
@@ -112,7 +113,7 @@ class TaskWorker:
                     worker_pid=None,
                 )
             else:
-                status = "completed" if graph_status == "completed" else "failed"
+                status: TaskStatus = "completed" if graph_status == "completed" else "failed"
                 terminal = self.store.update(
                     status=status,
                     completed_subtasks=completed,
@@ -168,9 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--task-dir", required=True, type=Path)
     parser.add_argument("--resume-json")
     args = parser.parse_args(argv)
-    record = TaskWorker(TaskStore.open(args.task_dir)).run(
-        resume=_parse_resume(args.resume_json)
-    )
+    record = TaskWorker(TaskStore.open(args.task_dir)).run(resume=_parse_resume(args.resume_json))
     return 0 if record.status in {"completed", "waiting_approval", "blocked"} else 1
 
 

@@ -120,9 +120,7 @@ def test_worker_executes_task_and_persists_terminal_result(tmp_path: Path) -> No
     from ato_core.runtime.worker import TaskWorker
 
     store = TaskStore.create(tmp_path, "task-a", tmp_path, description="build a feature")
-    runtime = FakeRuntime(
-        {"status": "completed", "artifacts": {"a": "done"}, "subtasks": []}
-    )
+    runtime = FakeRuntime({"status": "completed", "artifacts": {"a": "done"}, "subtasks": []})
 
     record = TaskWorker(store, runtime=runtime).run()
 
@@ -131,9 +129,7 @@ def test_worker_executes_task_and_persists_terminal_result(tmp_path: Path) -> No
     assert record.completed_subtasks == 1
     assert record.total_subtasks == 1
     assert record.worker_pid is None
-    assert json.loads(store.paths.result.read_text(encoding="utf-8"))["artifacts"] == {
-        "a": "done"
-    }
+    assert json.loads(store.paths.result.read_text(encoding="utf-8"))["artifacts"] == {"a": "done"}
 
 
 def test_worker_resumes_approval_without_redecomposing(tmp_path: Path) -> None:

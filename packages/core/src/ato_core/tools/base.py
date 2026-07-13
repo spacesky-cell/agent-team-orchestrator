@@ -27,7 +27,7 @@ class BaseTool(ABC):
     parameters: ClassVar[Dict[str, Any]]  # JSON Schema format
 
     @abstractmethod
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Execute the tool with given arguments.
 
         Args:
@@ -38,7 +38,7 @@ class BaseTool(ABC):
         """
         pass
 
-    def _validate_args(self, **kwargs) -> None:
+    def _validate_args(self, **kwargs: Any) -> None:
         """Validate arguments against parameters schema.
 
         Override this method for custom validation logic.

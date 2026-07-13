@@ -4,16 +4,20 @@ import asyncio
 import os
 import time
 from pathlib import Path
+from typing import Any, cast
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
+from pydantic import BaseModel
 
 from ..memory.team_memory import TeamMemory
+from ..models.role import Role
 from ..models.state import SubtaskDef, TeamState
 from ..runtime.approval import ApprovalStore, ToolPermission
 from ..runtime.task_store import TaskStore
 from ..tools import get_all_tools, get_tools_for_role
-from ..tools.base import ToolExecutionContext
+from ..tools.base import BaseTool, ToolExecutionContext
 from ..tools.schema import pydantic_model_for_tool
 from .base_orchestrator import BaseGraphOrchestrator
 from .claude_cli_tools import (
@@ -22,7 +26,7 @@ from .claude_cli_tools import (
     parse_claude_cli_tool_response,
     tool_protocol_json_schema,
 )
-from .tool_audit import ToolAuditLogger, ToolPolicy
+from .tool_audit import ToolAuditLogger, ToolPolicy, ToolStatus
 
 
 class ToolEnabledOrchestrator(BaseGraphOrchestrator):
@@ -70,7 +74,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             storage_dir=memory_dir,
         )
 
-    def _convert_to_langchain_tools(self, tools: list) -> list:
+    def _convert_to_langchain_tools(self, tools: list[BaseTool]) -> list[Any]:
         """Convert our BaseTool instances to LangChain tools.
 
         Args:
@@ -80,15 +84,17 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             List of LangChain-compatible tools.
         """
         from langchain_core.tools import tool as langchain_tool
-        langchain_tools = []
+
+        langchain_tools: list[Any] = []
 
         for tool in tools:
             args_model = pydantic_model_for_tool(tool.parameters, f"{tool.name}Args")
 
-            def make_tool_func(base_tool, argument_model):
+            def make_tool_func(base_tool: BaseTool, argument_model: type[BaseModel]) -> Any:
                 """Wrapper function."""
+
                 @langchain_tool(args_schema=argument_model)
-                def tool_func(**kwargs):
+                def tool_func(**kwargs: Any) -> str:
                     """Wrapper function."""
                     return asyncio.run(base_tool.execute(**kwargs))
 
@@ -125,7 +131,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
         from rich.prompt import Confirm
 
         console = Console()
-        config = {"configurable": {"thread_id": thread_id}}
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
 
         graph = self._get_graph()
 
@@ -151,7 +157,7 @@ class ToolEnabledOrchestrator(BaseGraphOrchestrator):
             initial_state = self.create_initial_state(task_id, subtasks)
             final_state = graph.invoke(initial_state, config=config)
 
-        return final_state
+        return cast(TeamState, final_state)
 
     def _show_relevant_context_from_memory(self, task_id: str, subtasks: list[SubtaskDef]) -> None:
         """Show relevant context from team memory before starting task."""
@@ -216,6 +222,7 @@ You have access to tools - use them if needed to complete your task.
                 HumanMessage(content=user_prompt),
             ]
 
+            final_content: str | None
             if getattr(llm, "is_claude_cli", False):
                 final_content = self._run_claude_cli_tool_loop(
                     llm=llm,
@@ -289,7 +296,7 @@ You have access to tools - use them if needed to complete your task.
                             )
                         )
                 else:
-                    final_content = response.content
+                    final_content = str(response.content)
                     break
 
             if final_content is None:
@@ -319,12 +326,12 @@ You have access to tools - use them if needed to complete your task.
     def _run_claude_cli_tool_loop(
         self,
         *,
-        llm,
+        llm: Any,
         system_prompt: str,
         user_prompt: str,
-        tools: list,
-        state: TeamState | dict,
-        subtask: SubtaskDef | dict,
+        tools: list[BaseTool],
+        state: TeamState | dict[str, Any],
+        subtask: SubtaskDef | dict[str, Any],
         role_name: str,
         policy: ToolPolicy,
         audit_logger: ToolAuditLogger,
@@ -398,10 +405,10 @@ You have access to tools - use them if needed to complete your task.
     def _execute_tool_with_policy_and_audit(
         self,
         *,
-        tool,
-        tool_args: dict,
-        state: TeamState | dict,
-        subtask: SubtaskDef | dict,
+        tool: BaseTool,
+        tool_args: dict[str, Any],
+        state: TeamState | dict[str, Any],
+        subtask: SubtaskDef | dict[str, Any],
         role_name: str,
         policy: ToolPolicy,
         audit_logger: ToolAuditLogger,
@@ -481,7 +488,7 @@ You have access to tools - use them if needed to complete your task.
             )
             tool_result = asyncio.run(tool.execute(context=context, **tool_args))
             duration_ms = int((time.perf_counter() - started) * 1000)
-            status = "failed" if str(tool_result).startswith("Error:") else "completed"
+            status: ToolStatus = "failed" if str(tool_result).startswith("Error:") else "completed"
             audit_logger.record(
                 task_id=task_id,
                 subtask_id=subtask_id,
@@ -493,7 +500,7 @@ You have access to tools - use them if needed to complete your task.
                 duration_ms=duration_ms,
                 error=tool_result if status == "failed" else None,
             )
-            return tool_result
+            return str(tool_result)
         except Exception as e:
             duration_ms = int((time.perf_counter() - started) * 1000)
             audit_logger.record(
@@ -509,7 +516,7 @@ You have access to tools - use them if needed to complete your task.
             )
             return f"Error: {str(e)}"
 
-    def _record_to_memory(self, subtask: SubtaskDef, role, output: str) -> None:
+    def _record_to_memory(self, subtask: SubtaskDef, role: Role, output: str) -> None:
         """Record subtask output to team memory."""
         from rich.console import Console
 

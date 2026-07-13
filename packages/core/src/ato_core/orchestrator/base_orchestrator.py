@@ -3,11 +3,15 @@
 import copy
 import sqlite3
 from pathlib import Path
+from typing import Any, Literal, cast
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.base import CheckpointTuple
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Send
 from rich.console import Console
 from rich.prompt import Confirm
@@ -44,8 +48,8 @@ class BaseGraphOrchestrator:
         self.llm_provider = get_llm_provider()
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._checkpointer = None
-        self._graph = None
+        self._checkpointer: SqliteSaver | None = None
+        self._graph: CompiledStateGraph[TeamState, None, TeamState, TeamState] | None = None
 
     # ============ Graph Building ============
 
@@ -56,14 +60,16 @@ class BaseGraphOrchestrator:
             self._checkpointer = SqliteSaver(conn)
         return self._checkpointer
 
-    def _get_graph(self) -> StateGraph:
+    def _get_graph(self) -> CompiledStateGraph[TeamState, None, TeamState, TeamState]:
         """Get or create the compiled graph."""
         if self._graph is None:
             checkpointer = self._get_checkpointer()
             self._graph = self._build_graph(checkpointer)
         return self._graph
 
-    def _build_graph(self, checkpointer: SqliteSaver) -> StateGraph:
+    def _build_graph(
+        self, checkpointer: SqliteSaver
+    ) -> CompiledStateGraph[TeamState, None, TeamState, TeamState]:
         """Build the LangGraph state graph.
 
         Override this method to customize graph structure.
@@ -77,7 +83,7 @@ class BaseGraphOrchestrator:
         workflow = StateGraph(TeamState)
 
         workflow.add_node("supervisor", self._supervisor_node)
-        workflow.add_node("execute_agent", self._execute_agent_node)
+        workflow.add_node("execute_agent", cast(Any, self._execute_agent_node))
         workflow.add_node("merge_results", self._merge_results_node)
 
         workflow.set_entry_point("supervisor")
@@ -95,12 +101,11 @@ class BaseGraphOrchestrator:
 
     # ============ Task Management ============
 
-    def check_existing_task(self, thread_id: str) -> dict | None:
+    def check_existing_task(self, thread_id: str) -> CheckpointTuple | None:
         """Check if a task checkpoint exists."""
         checkpointer = self._get_checkpointer()
-        config = {"configurable": {"thread_id": thread_id}}
-        state = checkpointer.get_tuple(config)
-        return state if state else None
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+        return checkpointer.get_tuple(config)
 
     def list_incomplete_tasks(self) -> list[str]:
         """List all tasks that have checkpoints but are not completed."""
@@ -146,7 +151,7 @@ class BaseGraphOrchestrator:
             Final team state.
         """
         thread_id = thread_id or task_id
-        config = {"configurable": {"thread_id": thread_id}}
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
 
         graph = self._get_graph()
 
@@ -161,14 +166,14 @@ class BaseGraphOrchestrator:
 
             if should_resume:
                 console.print("[green]Resuming from checkpoint...[/]")
-                final_state = graph.invoke(None, config=config)
+                final_state = cast(TeamState, graph.invoke(None, config=config))
             else:
                 console.print("[yellow]Starting fresh...[/]")
                 initial_state = self.create_initial_state(task_id, subtasks)
-                final_state = graph.invoke(initial_state, config=config)
+                final_state = cast(TeamState, graph.invoke(initial_state, config=config))
         else:
             initial_state = self.create_initial_state(task_id, subtasks)
-            final_state = graph.invoke(initial_state, config=config)
+            final_state = cast(TeamState, graph.invoke(initial_state, config=config))
 
         return final_state
 
@@ -241,12 +246,10 @@ class BaseGraphOrchestrator:
             "applied_execution_ids": [],
         }
         updated = self._execute_agent_state(local_state)
-        updated_subtask = next(
-            item for item in updated["subtasks"] if item["id"] == subtask["id"]
+        updated_subtask = next(item for item in updated["subtasks"] if item["id"] == subtask["id"])
+        status: Literal["completed", "failed"] = (
+            "completed" if updated_subtask["status"] == "completed" else "failed"
         )
-        status = updated_subtask["status"]
-        if status not in {"completed", "failed"}:
-            status = "failed"
         result: SubtaskExecutionResult = {
             "execution_id": subtask["id"],
             "subtask_id": subtask["id"],

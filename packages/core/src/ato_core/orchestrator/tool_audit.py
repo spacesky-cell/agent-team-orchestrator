@@ -7,11 +7,9 @@ from typing import Any, Literal
 
 from ..runtime.approval import ToolDecision, ToolPolicy
 
-ToolStatus = Literal[
-    "requested", "approved", "rejected", "completed", "failed", "blocked"
-]
+ToolStatus = Literal["requested", "approved", "rejected", "completed", "failed", "blocked"]
 
-__all__ = ["ToolAuditLogger", "ToolDecision", "ToolPolicy"]
+__all__ = ["ToolAuditLogger", "ToolDecision", "ToolPolicy", "ToolStatus"]
 
 
 class ToolAuditLogger:

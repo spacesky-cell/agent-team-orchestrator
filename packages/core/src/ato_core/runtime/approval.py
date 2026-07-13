@@ -22,9 +22,7 @@ class ToolPermission(str, Enum):
     DENY = "deny"
 
 
-ToolDecisionName = Literal[
-    "auto_allowed", "auto_approved_env", "requires_approval", "denied"
-]
+ToolDecisionName = Literal["auto_allowed", "auto_approved_env", "requires_approval", "denied"]
 
 
 @dataclass(frozen=True)

@@ -1,5 +1,6 @@
 """File operation tools for agents to interact with the filesystem."""
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, ClassVar, Dict
 
@@ -14,13 +15,13 @@ ALLOWED_DIRS = [
 MAX_FILE_SIZE = 1024 * 1024
 
 
-def _normalize_allowed_dirs(allowed_dirs: list[Path | str] | None = None) -> list[Path]:
+def _normalize_allowed_dirs(allowed_dirs: Sequence[Path | str] | None = None) -> list[Path]:
     """Return resolved directories that tools may access."""
     dirs = allowed_dirs or ALLOWED_DIRS
     return [Path(directory).resolve() for directory in dirs]
 
 
-def _is_path_allowed(path: Path, allowed_dirs: list[Path | str] | None = None) -> bool:
+def _is_path_allowed(path: Path, allowed_dirs: Sequence[Path | str] | None = None) -> bool:
     """Check if a path is within allowed directories.
 
     Args:
@@ -83,10 +84,10 @@ class ReadFileTool(BaseTool):
         "required": ["path"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Read file content.
 
         Args:
@@ -99,6 +100,8 @@ class ReadFileTool(BaseTool):
             File contents.
         """
         path = kwargs.get("path")
+        if not isinstance(path, (str, Path)):
+            return "Error: path is required"
         encoding = kwargs.get("encoding", "utf-8")
         start_line = kwargs.get("start_line")
         end_line = kwargs.get("end_line")
@@ -170,10 +173,10 @@ class WriteFileTool(BaseTool):
         "required": ["path", "content"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Write content to file.
 
         Args:
@@ -186,6 +189,8 @@ class WriteFileTool(BaseTool):
             Success message or error.
         """
         path = kwargs.get("path")
+        if not isinstance(path, (str, Path)):
+            return "Error: path is required"
         content = kwargs.get("content", "")
         encoding = kwargs.get("encoding", "utf-8")
         mode = kwargs.get("mode", "write")
@@ -237,10 +242,10 @@ class ListDirectoryTool(BaseTool):
         "required": [],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """List directory contents.
 
         Args:
@@ -309,10 +314,10 @@ class DeleteFileTool(BaseTool):
         "required": ["path"],
     }
 
-    def __init__(self, allowed_dirs: list[Path | str] | None = None):
+    def __init__(self, allowed_dirs: Sequence[Path | str] | None = None):
         self.allowed_dirs = _normalize_allowed_dirs(allowed_dirs)
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, **kwargs: Any) -> str:
         """Delete a file.
 
         Args:
@@ -322,6 +327,8 @@ class DeleteFileTool(BaseTool):
             Success message or error.
         """
         path = kwargs.get("path")
+        if not isinstance(path, (str, Path)):
+            return "Error: path is required"
         context = kwargs.get("context")
         file_path = _resolve_path(path, context)
 
@@ -343,7 +350,7 @@ class DeleteFileTool(BaseTool):
 
 
 # Factory function
-def get_file_tools(allowed_dirs: list[Path | str] | None = None) -> list[BaseTool]:
+def get_file_tools(allowed_dirs: Sequence[Path | str] | None = None) -> list[BaseTool]:
     """Get all file operation tools.
 
     Returns:

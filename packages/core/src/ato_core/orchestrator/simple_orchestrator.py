@@ -16,9 +16,14 @@ from ..models.task import Subtask, TaskDecomposition, TaskResult
 from ..prompts.task_decompose import TaskDecomposer, TaskDecompositionResult
 
 # Fix Windows console encoding for Unicode characters
-if sys.platform == "win32" and sys.stdout.encoding != "utf-8":
+if (
+    sys.platform == "win32"
+    and sys.stdout.encoding != "utf-8"
+    and hasattr(sys.stdout, "reconfigure")
+):
     sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
 # Load environment variables
 load_dotenv()
@@ -68,7 +73,7 @@ class SimpleOrchestrator:
 
         # Parse output as JSON
         parser = JsonOutputParser(pydantic_object=TaskDecompositionResult)
-        messages.append(parser.get_format_instructions())
+        messages.append(HumanMessage(content=parser.get_format_instructions()))
 
         # Call LLM
         with console.status("[bold green]Thinking...[/bold green]"):

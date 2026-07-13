@@ -1,0 +1,36 @@
+name: Release artifacts
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: python -m pip install -e "packages/core[dev]"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run verify
+      - run: python -m build packages/core
+      - run: mkdir -p release-artifacts
+      - run: pnpm --filter @spacesky-cell/ato-shared pack --pack-destination ../../release-artifacts
+      - run: pnpm --filter @spacesky-cell/ato-cli pack --pack-destination ../../release-artifacts
+      - run: pnpm --filter @spacesky-cell/ato-mcp-server pack --pack-destination ../../release-artifacts
+      - run: pnpm pack --pack-destination release-artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            packages/core/dist/*
+            release-artifacts/*

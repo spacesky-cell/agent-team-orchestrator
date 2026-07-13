@@ -51,13 +51,11 @@ class FakeClaudeCliModel:
 def test_parse_structured_claude_cli_tool_call_from_fenced_json():
     from ato_core.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
 
-    parsed = parse_claude_cli_tool_response(
-        """
+    parsed = parse_claude_cli_tool_response("""
 ```json
 {"type":"tool_call","name":"echo","args":{"value":"hello"}}
 ```
-"""
-    )
+""")
 
     assert parsed.type == "tool_call"
     assert parsed.name == "echo"
@@ -74,8 +72,10 @@ def test_parse_structured_claude_cli_final_response_from_raw_json():
 
 
 def test_parse_structured_claude_cli_rejects_invalid_json():
-    from ato_core.orchestrator.claude_cli_tools import ToolResponseParseError
-    from ato_core.orchestrator.claude_cli_tools import parse_claude_cli_tool_response
+    from ato_core.orchestrator.claude_cli_tools import (
+        ToolResponseParseError,
+        parse_claude_cli_tool_response,
+    )
 
     with pytest.raises(ToolResponseParseError):
         parse_claude_cli_tool_response("plain markdown answer")
