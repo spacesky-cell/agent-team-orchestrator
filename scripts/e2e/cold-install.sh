@@ -79,8 +79,12 @@ if ! doctor_json="$(./node_modules/.bin/ato doctor 2>"$temp/first-doctor.stderr"
 fi
 core_version="$(printf '%s' "$doctor_json" | "$clean_python" -c 'import json,sys; print(json.load(sys.stdin)["core_version"])')"
 managed_python="$(printf '%s' "$doctor_json" | "$clean_python" -c 'import json,sys; print(json.load(sys.stdin)["python"])')"
+echo "cold: doctor core=$core_version expected=$expected_version python=$managed_python"
 [[ "$core_version" == "$expected_version" ]] || { echo "Managed core version $core_version differs from $expected_version" >&2; exit 1; }
-"$clean_python" -c 'import os,sys; root=os.path.realpath(sys.argv[1]); selected=os.path.realpath(sys.argv[2]); raise SystemExit(0 if os.path.commonpath([root, selected]) == root else 1)' "$ATO_HOME/runtime" "$managed_python"
+case "$managed_python" in
+  "$ATO_HOME"/runtime/*) ;;
+  *) echo "doctor selected Python outside ATO_HOME: $managed_python" >&2; exit 1 ;;
+esac
 grep -q 'Installing bundled ATO core' "$temp/first-doctor.stderr"
 echo "cold: first doctor provisioned managed runtime"
 ./node_modules/.bin/ato roles >/dev/null
