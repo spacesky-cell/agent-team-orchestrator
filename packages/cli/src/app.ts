@@ -1,6 +1,11 @@
 import { createInterface } from "node:readline/promises";
 
-import { BridgeClient, discoverPython } from "@spacesky-cell/ato-shared";
+import {
+  BridgeClient,
+  discoverPython,
+  type DiscoveryOptions,
+  type PythonRuntime,
+} from "@spacesky-cell/ato-shared";
 import { Command, CommanderError } from "commander";
 
 export interface BridgePort {
@@ -21,6 +26,14 @@ export interface CliDependencies {
   stderr: (value: string) => void;
   promptApproval: (request: ApprovalPrompt) => Promise<boolean>;
   sleep: (milliseconds: number) => Promise<void>;
+}
+
+export interface DefaultDependenciesOptions {
+  discoverPython?: (options: DiscoveryOptions) => Promise<PythonRuntime>;
+  createBridge?: (runtime: PythonRuntime) => BridgePort;
+  cwd?: () => string;
+  stdout?: (value: string) => void;
+  stderr?: (value: string) => void;
 }
 
 interface TaskRecord {
@@ -216,12 +229,21 @@ export async function runCli(argv: string[], deps: CliDependencies): Promise<num
   }
 }
 
-export async function defaultDependencies(): Promise<CliDependencies> {
-  let bridge: Promise<BridgeClient> | undefined;
+export async function defaultDependencies(
+  options: DefaultDependenciesOptions = {},
+): Promise<CliDependencies> {
+  const cwd = options.cwd ?? (() => process.cwd());
+  const stdout = options.stdout ?? ((value: string) => console.log(value));
+  const stderr = options.stderr ?? ((value: string) => console.error(value));
+  const discover = options.discoverPython ?? discoverPython;
+  const createBridge =
+    options.createBridge ?? ((runtime: PythonRuntime) => new BridgeClient(runtime, { cwd: cwd() }));
+  let bridge: Promise<BridgePort> | undefined;
   const getBridge = () => {
-    bridge ??= discoverPython({ projectRoot: process.cwd() }).then(
-      (runtime) => new BridgeClient(runtime, { cwd: process.cwd() }),
-    );
+    bridge ??= discover({
+      projectRoot: cwd(),
+      onManagedRuntimeStatus: (_status, message) => stderr(message),
+    }).then((runtime) => createBridge(runtime));
     return bridge;
   };
   return {
@@ -230,9 +252,9 @@ export async function defaultDependencies(): Promise<CliDependencies> {
         (await getBridge()).call<T>(command, payload),
     },
     version: "0.2.0",
-    cwd: () => process.cwd(),
-    stdout: (value) => console.log(value),
-    stderr: (value) => console.error(value),
+    cwd,
+    stdout,
+    stderr,
     promptApproval: async (request) => {
       const prompt = createInterface({ input: process.stdin, output: process.stderr });
       const answer = await prompt.question(`Approve ${request.tool_name} (${request.request_id})? [y/N] `);

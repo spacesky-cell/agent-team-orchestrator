@@ -109,7 +109,7 @@
 - Consumes: `ensureManagedRuntime`, `ATO_BUNDLED_RUNTIME_MANIFEST`, existing probe order, and stderr callbacks.
 - Produces: `DiscoveryOptions.onManagedRuntimeStatus`, injectable `prepareManagedRuntime`, and lazy CLI/MCP bridge setup sharing the same managed runtime.
 
-- [ ] **Step 1: Add discovery and adapter RED tests**
+- [x] **Step 1: Add discovery and adapter RED tests**
 
   Cover existing-core precedence, managed fallback only after candidates fail, no-manifest `PYTHON_NOT_FOUND`, failed `ATO_PYTHON` retained as managed base, CLI bootstrap statuses on stderr only when a bridge command runs, MCP bootstrap statuses on stderr with empty stdout, and no discovery for version/help.
 
@@ -119,23 +119,23 @@
   expect(stderr.join("\n")).toContain("Preparing ATO Python runtime");
   ```
 
-- [ ] **Step 2: Verify the new tests fail for missing fallback/status behavior**
+- [x] **Step 2: Verify the new tests fail for missing fallback/status behavior**
 
   Run: `pnpm exec vitest run packages/shared/src/python-discovery.test.ts packages/cli/src/app.test.ts packages/mcp-server/src/bin.test.ts`
 
   Expected: FAIL on missing discovery options and MCP/CLI status routing.
 
-- [ ] **Step 3: Implement fallback and status wiring**
+- [x] **Step 3: Implement fallback and status wiring**
 
   Record failed base candidates without exposing probe errors, delegate once to `ensureManagedRuntime` when the manifest exists, pass the first executable base candidate to managed provisioning, keep CLI creation lazy, and provide concise stage messages through `console.error` for CLI and MCP.
 
-- [ ] **Step 4: Verify Task 2**
+- [x] **Step 4: Verify Task 2**
 
   Run: `pnpm exec vitest run packages/shared/src/python-discovery.test.ts packages/cli/src/app.test.ts packages/mcp-server/src/bin.test.ts && pnpm run typecheck`
 
   Expected: all focused tests and workspace type checks pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
   ```bash
   git add packages/shared/src/python-discovery.ts packages/shared/src/python-discovery.test.ts packages/cli/src/app.ts packages/cli/src/app.test.ts packages/mcp-server/src/bin.ts packages/mcp-server/src/bin.test.ts

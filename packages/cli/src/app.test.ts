@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { runCli, type BridgePort, type CliDependencies } from "./app.js";
+import {
+  defaultDependencies,
+  runCli,
+  type BridgePort,
+  type CliDependencies,
+} from "./app.js";
 
 class FakeBridge implements BridgePort {
   calls: Array<[string, Record<string, unknown>]> = [];
@@ -142,5 +147,33 @@ describe("CLI bridge adapter", () => {
 
     expect(code).toBe(1);
     expect(stderr).toEqual(["TASK_NOT_FOUND: missing"]);
+  });
+
+  it("keeps discovery lazy and routes managed status to stderr", async () => {
+    const bridge = new FakeBridge();
+    bridge.responses = [{ core_version: "0.2.0" }];
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    let discoveries = 0;
+    const deps = await defaultDependencies({
+      discoverPython: async (options) => {
+        discoveries += 1;
+        options.onManagedRuntimeStatus?.("installing", "Installing bundled ATO core");
+        return { executable: "python-test", version: "3.12.0", coreVersion: "0.2.0" };
+      },
+      createBridge: () => bridge,
+      cwd: () => "C:/project",
+      stdout: (value) => stdout.push(value),
+      stderr: (value) => stderr.push(value),
+    });
+
+    expect(await runCli(["node", "ato", "--version"], deps)).toBe(0);
+    expect(discoveries).toBe(0);
+    expect(stderr).toEqual([]);
+
+    expect(await runCli(["node", "ato", "doctor"], deps)).toBe(0);
+    expect(discoveries).toBe(1);
+    expect(stderr).toEqual(["Installing bundled ATO core"]);
+    expect(stdout).toEqual(["0.2.0", JSON.stringify({ core_version: "0.2.0" }, null, 2)]);
   });
 });

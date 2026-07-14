@@ -1,14 +1,40 @@
 #!/usr/bin/env node
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { BridgeClient, discoverPython } from "@spacesky-cell/ato-shared";
+import {
+  BridgeClient,
+  discoverPython,
+  type DiscoveryOptions,
+  type PythonRuntime,
+} from "@spacesky-cell/ato-shared";
 import { pathToFileURL } from "node:url";
 
-import { createAtoServer } from "./server.js";
+import { createAtoServer, type BridgePort } from "./server.js";
 
-export async function main(): Promise<void> {
-  const runtime = await discoverPython({ projectRoot: process.cwd() });
-  const bridge = new BridgeClient(runtime, { cwd: process.cwd() });
+export interface McpRuntimeDependencies {
+  discoverPython?: (options: DiscoveryOptions) => Promise<PythonRuntime>;
+  createBridge?: (runtime: PythonRuntime) => BridgePort;
+  stderr?: (value: string) => void;
+  cwd?: () => string;
+}
+
+export async function createMcpBridge(
+  dependencies: McpRuntimeDependencies = {},
+): Promise<BridgePort> {
+  const cwd = dependencies.cwd ?? (() => process.cwd());
+  const stderr = dependencies.stderr ?? ((value: string) => console.error(value));
+  const discover = dependencies.discoverPython ?? discoverPython;
+  const runtime = await discover({
+    projectRoot: cwd(),
+    onManagedRuntimeStatus: (_status, message) => stderr(message),
+  });
+  return (dependencies.createBridge ?? ((selected) => new BridgeClient(selected, { cwd: cwd() })))(
+    runtime,
+  );
+}
+
+export async function main(dependencies: McpRuntimeDependencies = {}): Promise<void> {
+  const bridge = await createMcpBridge(dependencies);
   await createAtoServer(bridge).connect(new StdioServerTransport());
 }
 

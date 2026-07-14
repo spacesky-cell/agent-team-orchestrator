@@ -3,6 +3,11 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
+import {
+  ensureManagedRuntime,
+  type ManagedRuntimeOptions,
+  type ManagedRuntimeStatus,
+} from "./managed-runtime.js";
 import type { PythonRuntime } from "./protocol.js";
 
 const execFileAsync = promisify(execFile);
@@ -21,8 +26,14 @@ export interface DiscoveryOptions {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   probeTimeoutMs?: number;
+  managedRuntimeTimeoutMs?: number;
   exists?: (path: string) => boolean;
   probe?: (executable: string, timeoutMs: number) => Promise<PythonRuntime>;
+  onManagedRuntimeStatus?: (status: ManagedRuntimeStatus, message: string) => void;
+  prepareManagedRuntime?: (
+    manifestPath: string,
+    options: ManagedRuntimeOptions,
+  ) => Promise<PythonRuntime>;
 }
 
 async function probePython(executable: string, timeoutMs: number): Promise<PythonRuntime> {
@@ -66,6 +77,17 @@ export async function discoverPython(options: DiscoveryOptions = {}): Promise<Py
     } catch {
       attempts.push(candidate);
     }
+  }
+  const manifestPath = env.ATO_BUNDLED_RUNTIME_MANIFEST?.trim();
+  if (manifestPath) {
+    const prepareManagedRuntime = options.prepareManagedRuntime ?? ensureManagedRuntime;
+    return prepareManagedRuntime(manifestPath, {
+      env,
+      platform,
+      onStatus: options.onManagedRuntimeStatus,
+      timeoutMs: options.managedRuntimeTimeoutMs,
+      basePythonCandidates: unique,
+    });
   }
   throw new PythonDiscoveryError(attempts.slice(0, 5));
 }
