@@ -203,27 +203,27 @@
 - Consumes: Python dist output, prepared `vendor/`, four packed npm tarballs, clean temporary `ATO_HOME`.
 - Produces: reproducible six-artifact checksum manifest and Windows/Linux npm-only install evidence.
 
-- [ ] **Step 1: Change cold-install scripts into a failing npm-only gate**
+- [x] **Step 1: Change cold-install scripts into a failing npm-only gate**
 
   Remove temporary venv creation, wheel pip install, and `ATO_PYTHON`. Prepare the root vendor payload before packing, install only the four tarballs with `--ignore-scripts`, set a temporary `ATO_HOME`, assert no pre-existing `ato_core`, run version/doctor/roles/MCP, capture the managed executable, and run doctor twice while asserting the second invocation emits no install stage.
 
-- [ ] **Step 2: Run the Windows gate and verify RED**
+- [x] **Step 2: Run the Windows gate and verify RED**
 
   Run: `./scripts/e2e/cold-install.ps1`
 
   Expected: FAIL before implementation integration is complete, at managed runtime provisioning or artifact inspection rather than manual pip setup.
 
-- [ ] **Step 3: Harden artifact inspection, MCP failure smoke, and workflows**
+- [x] **Step 3: Harden artifact inspection, MCP failure smoke, and workflows**
 
   Reject root tarballs missing both vendor files, reject packed `workspace:` specs, assert MCP startup never writes protocol-invalid stdout, keep generated payloads uncommitted, upload Python wheel/sdist plus four npm tarballs and manifest, and run Linux MyPy on Python 3.10 and 3.12.
 
-- [ ] **Step 4: Verify Task 4 locally**
+- [x] **Step 4: Verify Task 4 locally**
 
   Run: `./scripts/e2e/cold-install.ps1`
 
   Expected: `ato --version`, `ato doctor`, `ato roles`, repeated runtime reuse, and MCP stdio startup all pass using npm tarballs only.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
   ```bash
   git add scripts/e2e/cold-install.ps1 scripts/e2e/cold-install.sh scripts/e2e/mcp-smoke.mjs scripts/release/build-manifest.mjs .github/workflows/ci.yml .github/workflows/release.yml
