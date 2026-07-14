@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -189,6 +189,10 @@ describe("managed runtime lifecycle", () => {
       "pip",
       "core-probe",
     ]);
+    expect(basename(harness.commands.find((command) => command.stage === "venv")?.args.at(-1) ?? ""))
+      .toBe("venv");
+    expect(basename(harness.commands.find((command) => command.stage === "pip")?.args.at(-1) ?? ""))
+      .toBe("ato_core-0.2.1-py3-none-any.whl");
     expect(marker).toMatchObject({ coreVersion: "0.2.1", pythonExecutable: first.executable });
     expect(marker.wheelSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(statuses).toEqual(["checking", "creating", "installing", "ready"]);

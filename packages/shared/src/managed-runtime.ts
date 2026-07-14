@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  copyFile,
   mkdir,
   open,
   readFile,
@@ -527,13 +528,18 @@ export async function ensureManagedRuntime(
     await runInstallStage(
       {
         executable: basePython.executable,
-        args: ["-m", "venv", temporaryRoot],
+        args: ["-m", "venv", path.join(temporaryRoot, "venv")],
         timeoutMs: 120_000,
         stage: "venv",
       },
       deps,
     );
     const temporaryPython = venvPython(temporaryRoot, platform);
+    const installWheel = path.join(
+      temporaryRoot,
+      `ato_core-${manifest.coreVersion}-py3-none-any.whl`,
+    );
+    await copyFile(manifest.wheelPath, installWheel);
     options.onStatus?.("installing", "Installing bundled ATO core and Python dependencies");
     await runInstallStage(
       {
@@ -544,7 +550,7 @@ export async function ensureManagedRuntime(
           "install",
           "--disable-pip-version-check",
           "--no-input",
-          manifest.wheelPath,
+          installWheel,
         ],
         timeoutMs: 600_000,
         stage: "pip",
