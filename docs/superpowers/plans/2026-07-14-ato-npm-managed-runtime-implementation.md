@@ -32,7 +32,7 @@
 - Consumes: `PythonRuntime` from `packages/shared/src/protocol.ts`, a generated JSON manifest, filesystem/process primitives, and optional injected dependencies for deterministic tests.
 - Produces: `ManagedRuntimeStatus`, `ManagedRuntimeOptions`, `ManagedRuntimeError`, and `ensureManagedRuntime(manifestPath, options): Promise<PythonRuntime>`.
 
-- [ ] **Step 1: Add manifest and path RED tests**
+- [x] **Step 1: Add manifest and path RED tests**
 
   Add table-driven Vitest cases that write temporary manifests and assert exact stable codes for unsupported fields/schema, non-semver versions, package/core mismatch, traversal outside the vendor directory, missing wheel, hash mismatch, and Python below 3.10. Add platform path cases for `ATO_HOME`, Windows `LOCALAPPDATA`, macOS Application Support, Linux `XDG_DATA_HOME`, and Linux home fallback.
 
@@ -43,13 +43,13 @@
   expect(harness.runtimeRoot("linux", { ATO_HOME: "/ato" })).toBe("/ato/runtime/0.2.1");
   ```
 
-- [ ] **Step 2: Verify the manifest/path tests fail for the missing module**
+- [x] **Step 2: Verify the manifest/path tests fail for the missing module**
 
   Run: `pnpm exec vitest run packages/shared/src/managed-runtime.test.ts`
 
   Expected: FAIL because `./managed-runtime.js` cannot be resolved.
 
-- [ ] **Step 3: Implement strict validation, hashing, storage selection, and typed errors**
+- [x] **Step 3: Implement strict validation, hashing, storage selection, and typed errors**
 
   Implement exact-field JSON validation, realpath/relative containment checks, streamed SHA-256, semver parsing, Python version probing, platform-specific storage roots, bounded/redacted messages, and these error codes:
 
@@ -62,7 +62,7 @@
     | "MANAGED_RUNTIME_INSTALL_FAILED";
   ```
 
-- [ ] **Step 4: Add installation lifecycle RED tests**
+- [x] **Step 4: Add installation lifecycle RED tests**
 
   Use injected subprocess/filesystem timing hooks to cover successful venv creation, marker content, cache reuse without pip, corrupt marker rebuild, exclusive lock wait, stale lock recovery, lock timeout, bounded subprocess timeout, credential/token redaction, temporary-directory cleanup, and lock cleanup.
 
@@ -72,23 +72,23 @@
   expect(harness.commands.filter((command) => command.stage === "pip")).toHaveLength(1);
   ```
 
-- [ ] **Step 5: Verify lifecycle tests fail on missing behavior**
+- [x] **Step 5: Verify lifecycle tests fail on missing behavior**
 
   Run: `pnpm exec vitest run packages/shared/src/managed-runtime.test.ts`
 
   Expected: validation cases pass and lifecycle cases FAIL because installation/locking is not implemented.
 
-- [ ] **Step 6: Implement bounded installation, locking, atomic promotion, and cache probing**
+- [x] **Step 6: Implement bounded installation, locking, atomic promotion, and cache probing**
 
   Use exclusive lock creation, a 180-second waiter with 500 ms probes, ten-minute stale-lock recovery, UUID temporary directory, 120-second venv timeout, 600-second pip timeout, 10-second probes, 1 MiB process-output cap, 4 KiB redacted error cap, atomic marker writes, containment checks before removal, rename promotion, and `finally` cleanup. Export the module from `src/index.ts`.
 
-- [ ] **Step 7: Verify Task 1**
+- [x] **Step 7: Verify Task 1**
 
   Run: `pnpm exec vitest run packages/shared/src/managed-runtime.test.ts && pnpm --filter @spacesky-cell/ato-shared lint && pnpm --filter @spacesky-cell/ato-shared build`
 
   Expected: all focused tests pass, ESLint reports zero warnings, and TypeScript build exits 0.
 
-- [ ] **Step 8: Commit Task 1**
+- [x] **Step 8: Commit Task 1**
 
   ```bash
   git add packages/shared/src/managed-runtime.ts packages/shared/src/managed-runtime.test.ts packages/shared/src/index.ts

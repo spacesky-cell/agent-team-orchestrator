@@ -1,6 +1,7 @@
 /** Agent Team Orchestrator - Shared Types and Utilities */
 
 export * from "./bridge-client.js";
+export * from "./managed-runtime.js";
 export * from "./protocol.js";
 export * from "./python-discovery.js";
 
