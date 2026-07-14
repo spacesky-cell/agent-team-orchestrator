@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
@@ -34,6 +35,7 @@ export interface DiscoveryOptions {
     manifestPath: string,
     options: ManagedRuntimeOptions,
   ) => Promise<PythonRuntime>;
+  readBundledCoreVersion?: (manifestPath: string) => Promise<string | undefined>;
 }
 
 async function probePython(executable: string, timeoutMs: number): Promise<PythonRuntime> {
@@ -53,6 +55,15 @@ async function probePython(executable: string, timeoutMs: number): Promise<Pytho
   return { executable, version: payload.version, coreVersion: payload.coreVersion };
 }
 
+async function readBundledCoreVersion(manifestPath: string): Promise<string | undefined> {
+  try {
+    const value = JSON.parse(await readFile(manifestPath, "utf8")) as { coreVersion?: unknown };
+    return typeof value.coreVersion === "string" ? value.coreVersion : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function discoverPython(options: DiscoveryOptions = {}): Promise<PythonRuntime> {
   const projectRoot = options.projectRoot ?? process.cwd();
   const env = options.env ?? process.env;
@@ -70,15 +81,22 @@ export async function discoverPython(options: DiscoveryOptions = {}): Promise<Py
   );
   const unique = [...new Set(candidates)];
   const attempts: string[] = [];
+  const manifestPath = env.ATO_BUNDLED_RUNTIME_MANIFEST?.trim();
+  const expectedCoreVersion = manifestPath
+    ? await (options.readBundledCoreVersion ?? readBundledCoreVersion)(manifestPath)
+    : undefined;
 
   for (const candidate of unique) {
     try {
-      return await probe(candidate, timeoutMs);
+      const runtime = await probe(candidate, timeoutMs);
+      if (!manifestPath || (expectedCoreVersion && runtime.coreVersion === expectedCoreVersion)) {
+        return runtime;
+      }
+      attempts.push(candidate);
     } catch {
       attempts.push(candidate);
     }
   }
-  const manifestPath = env.ATO_BUNDLED_RUNTIME_MANIFEST?.trim();
   if (manifestPath) {
     const prepareManagedRuntime = options.prepareManagedRuntime ?? ensureManagedRuntime;
     return prepareManagedRuntime(manifestPath, {

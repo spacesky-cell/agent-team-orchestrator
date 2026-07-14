@@ -6,7 +6,7 @@ import { PythonDiscoveryError, discoverPython } from "./python-discovery.js";
 const runtime = (executable: string) => ({
   executable,
   version: "3.12.0",
-  coreVersion: "0.2.0",
+  coreVersion: "0.2.1",
 });
 
 describe("Python discovery", () => {
@@ -76,6 +76,7 @@ describe("Python discovery", () => {
         ATO_BUNDLED_RUNTIME_MANIFEST: "C:/package/vendor/runtime-manifest.json",
       },
       exists: () => false,
+      readBundledCoreVersion: async () => "0.2.1",
       probe: async (candidate) => {
         attempted.push(candidate);
         throw new Error("ato_core unavailable");
@@ -104,6 +105,7 @@ describe("Python discovery", () => {
       platform: "linux",
       env: { ATO_BUNDLED_RUNTIME_MANIFEST: "/package/vendor/runtime-manifest.json" },
       exists: () => false,
+      readBundledCoreVersion: async () => "0.2.1",
       probe: async (candidate) => runtime(candidate),
       prepareManagedRuntime: async () => {
         managedCalls += 1;
@@ -113,6 +115,26 @@ describe("Python discovery", () => {
 
     expect(selected.executable).toBe("python3");
     expect(managedCalls).toBe(0);
+  });
+
+  it("does not select an ambient core whose version differs from the bundle", async () => {
+    let managedCalls = 0;
+    const selected = await discoverPython({
+      projectRoot: "/project",
+      platform: "linux",
+      env: { ATO_BUNDLED_RUNTIME_MANIFEST: "/package/vendor/runtime-manifest.json" },
+      exists: () => false,
+      readBundledCoreVersion: async () => "0.2.1",
+      probe: async (candidate) => ({ ...runtime(candidate), coreVersion: "0.2.0" }),
+      prepareManagedRuntime: async (_manifest, options) => {
+        managedCalls += 1;
+        expect(options.basePythonCandidates).toEqual(["python3", "python"]);
+        return runtime("/managed/python");
+      },
+    });
+
+    expect(selected.coreVersion).toBe("0.2.1");
+    expect(managedCalls).toBe(1);
   });
 
   it("forwards managed runtime status without exposing other environment values", async () => {
@@ -125,6 +147,7 @@ describe("Python discovery", () => {
         API_TOKEN: "do-not-print",
       },
       exists: () => false,
+      readBundledCoreVersion: async () => "0.2.1",
       probe: async () => {
         throw new Error("unavailable");
       },
