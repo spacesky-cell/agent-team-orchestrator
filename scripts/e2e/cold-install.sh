@@ -58,7 +58,10 @@ version="$(./node_modules/.bin/ato --version)"
 [[ "$version" == "$expected_version" ]] || { echo "Expected ato $expected_version, received $version" >&2; exit 1; }
 [[ ! -e "$ATO_HOME/runtime" ]] || { echo "ato --version created the managed runtime" >&2; exit 1; }
 
-doctor_json="$(./node_modules/.bin/ato doctor 2>"$temp/first-doctor.stderr")"
+if ! doctor_json="$(./node_modules/.bin/ato doctor 2>"$temp/first-doctor.stderr")"; then
+  cat "$temp/first-doctor.stderr" >&2
+  exit 1
+fi
 core_version="$(printf '%s' "$doctor_json" | "$clean_python" -c 'import json,sys; print(json.load(sys.stdin)["core_version"])')"
 managed_python="$(printf '%s' "$doctor_json" | "$clean_python" -c 'import json,sys; print(json.load(sys.stdin)["python"])')"
 [[ "$core_version" == "$expected_version" ]] || { echo "Managed core version $core_version differs from $expected_version" >&2; exit 1; }
@@ -66,7 +69,10 @@ managed_python="$(printf '%s' "$doctor_json" | "$clean_python" -c 'import json,s
 grep -q 'Installing bundled ATO core' "$temp/first-doctor.stderr"
 ./node_modules/.bin/ato roles >/dev/null
 
-second_doctor="$(./node_modules/.bin/ato doctor 2>"$temp/second-doctor.stderr")"
+if ! second_doctor="$(./node_modules/.bin/ato doctor 2>"$temp/second-doctor.stderr")"; then
+  cat "$temp/second-doctor.stderr" >&2
+  exit 1
+fi
 second_python="$(printf '%s' "$second_doctor" | "$clean_python" -c 'import json,sys; print(json.load(sys.stdin)["python"])')"
 [[ "$second_python" == "$managed_python" ]] || { echo "Second doctor selected a different runtime" >&2; exit 1; }
 ! grep -Eq 'Creating an isolated|Installing bundled' "$temp/second-doctor.stderr"
