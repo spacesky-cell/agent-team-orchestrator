@@ -24,7 +24,7 @@ function setup(bridge = new FakeBridge()) {
   const stderr: string[] = [];
   const deps: CliDependencies = {
     bridge,
-    version: "0.2.0",
+    version: "0.2.1",
     cwd: () => "C:/project",
     stdout: (value) => stdout.push(value),
     stderr: (value) => stderr.push(value),
@@ -41,13 +41,13 @@ describe("CLI bridge adapter", () => {
     const code = await runCli(["node", "ato", "--version"], deps);
 
     expect(code).toBe(0);
-    expect(stdout).toEqual(["0.2.0"]);
+    expect(stdout).toEqual(["0.2.1"]);
   });
 
   it("maps read commands to exact bridge requests", async () => {
     const { bridge, deps } = setup();
     bridge.responses = [
-      { core_version: "0.2.0" },
+      { core_version: "0.2.1" },
       { roles: [] },
       { task_id: "task-a", status: "running" },
       { task_id: "task-a", events: [] },
@@ -151,7 +151,7 @@ describe("CLI bridge adapter", () => {
 
   it("keeps discovery lazy and routes managed status to stderr", async () => {
     const bridge = new FakeBridge();
-    bridge.responses = [{ core_version: "0.2.0" }];
+    bridge.responses = [{ core_version: "0.2.1" }];
     const stdout: string[] = [];
     const stderr: string[] = [];
     let discoveries = 0;
@@ -159,7 +159,7 @@ describe("CLI bridge adapter", () => {
       discoverPython: async (options) => {
         discoveries += 1;
         options.onManagedRuntimeStatus?.("installing", "Installing bundled ATO core");
-        return { executable: "python-test", version: "3.12.0", coreVersion: "0.2.0" };
+        return { executable: "python-test", version: "3.12.0", coreVersion: "0.2.1" };
       },
       createBridge: () => bridge,
       cwd: () => "C:/project",
@@ -174,6 +174,6 @@ describe("CLI bridge adapter", () => {
     expect(await runCli(["node", "ato", "doctor"], deps)).toBe(0);
     expect(discoveries).toBe(1);
     expect(stderr).toEqual(["Installing bundled ATO core"]);
-    expect(stdout).toEqual(["0.2.0", JSON.stringify({ core_version: "0.2.0" }, null, 2)]);
+    expect(stdout).toEqual(["0.2.1", JSON.stringify({ core_version: "0.2.1" }, null, 2)]);
   });
 });

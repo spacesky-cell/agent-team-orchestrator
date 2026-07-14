@@ -251,7 +251,7 @@ export async function defaultDependencies(
       call: async <T>(command: string, payload: Record<string, unknown>) =>
         (await getBridge()).call<T>(command, payload),
     },
-    version: "0.2.0",
+    version: "0.2.1",
     cwd,
     stdout,
     stderr,

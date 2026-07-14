@@ -1,6 +1,6 @@
 {
   "name": "@spacesky-cell/agent-team-orchestrator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agent Team Orchestrator - Multi-agent collaboration system powered by LangGraph",
   "type": "module",
   "bin": {
@@ -40,8 +40,8 @@
     "CHANGELOG.md"
   ],
   "dependencies": {
-    "@spacesky-cell/ato-cli": "workspace:0.2.0",
-    "@spacesky-cell/ato-mcp-server": "workspace:0.2.0"
+    "@spacesky-cell/ato-cli": "workspace:0.2.1",
+    "@spacesky-cell/ato-mcp-server": "workspace:0.2.1"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.0",

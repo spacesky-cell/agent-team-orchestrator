@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-14
+
+### Added
+- Install the complete CLI and MCP runtime with one public npm command; the root tarball now embeds the version-matched Python core wheel and SHA-256 manifest.
+- Create and reuse an isolated, versioned Python environment on the first command that needs the core, with `ATO_HOME` support for an explicit data root.
+
+### Fixed
+- Keep `ato --version` and help independent from Python bootstrap while routing first-run status to stderr only.
+- Verify npm-only cold installation on Windows and Linux without `ATO_PYTHON` or a preinstalled `ato_core`, including MCP stdio and second-command reuse.
+
+### Documentation
+- Replace the previous two-layer public setup with the supported global npm installation in English, Chinese, quickstart, MCP, package, architecture, security, and contributor documentation.
+
+### Security
+- Validate bundled manifest fields, versions, path containment, and wheel hashes before subprocesses; bound locks, venv/pip/probe execution, output, and redacted failure diagnostics.
+
 ## [0.2.0] - 2026-07-13
 
 ### Added
@@ -58,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task decomposition, checkpointing, and dependency-aware execution
 - Mermaid visualization helpers
 
-[Unreleased]: https://github.com/spacesky-cell/agent-team-orchestrator/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/spacesky-cell/agent-team-orchestrator/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/spacesky-cell/agent-team-orchestrator/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/spacesky-cell/agent-team-orchestrator/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/spacesky-cell/agent-team-orchestrator/releases/tag/v0.1.0
 - Documentation for setup, MCP usage, and architecture

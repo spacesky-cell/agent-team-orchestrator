@@ -296,21 +296,21 @@
 - Consumes: completed feature commits since `v0.2.0`.
 - Produces: exact `0.2.1` metadata everywhere and a dated release changelog.
 
-- [ ] **Step 1: Update all first-party versions and exact workspace specs**
+- [x] **Step 1: Update all first-party versions and exact workspace specs**
 
   Set every package, Python core, CLI-reported version, and workspace spec to `0.2.1`; regenerate only the pnpm lockfile metadata with `pnpm install --lockfile-only`; do not alter unrelated dependency versions.
 
-- [ ] **Step 2: Add the `0.2.1` changelog entry**
+- [x] **Step 2: Add the `0.2.1` changelog entry**
 
   Add `## 0.2.1 - 2026-07-14` with Features, Fixes, Documentation, and Security/Packaging notes describing one-command npm installation, lazy managed runtime, npm-only cold-install gates, and bounded/redacted bootstrap failures.
 
-- [ ] **Step 3: Verify exact version consistency**
+- [x] **Step 3: Verify exact version consistency**
 
   Run a Node script that parses all JSON/TOML/text sources and exits non-zero unless every first-party version/spec is `0.2.1`, then run `pnpm install --frozen-lockfile`.
 
   Expected: consistency script and frozen install exit 0; third-party `forwarded@0.2.0` remains untouched.
 
-- [ ] **Step 4: Commit Task 6**
+- [x] **Step 4: Commit Task 6**
 
   ```bash
   git add package.json packages/shared/package.json packages/cli/package.json packages/mcp-server/package.json packages/core/package.json packages/core/pyproject.toml packages/core/src/ato_core/__init__.py packages/cli/src/app.ts packages/cli/src/app.test.ts pnpm-lock.yaml CHANGELOG.md

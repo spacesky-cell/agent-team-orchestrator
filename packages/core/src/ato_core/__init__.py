@@ -2,7 +2,7 @@
 
 from typing import Any
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 # Lazy imports - these are only loaded when actually used
 # This prevents circular import issues and reduces initial load time

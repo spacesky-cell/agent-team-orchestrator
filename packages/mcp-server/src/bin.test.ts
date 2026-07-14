@@ -9,7 +9,7 @@ describe("MCP runtime adapter", () => {
     const result = await createMcpBridge({
       discoverPython: async (options) => {
         options.onManagedRuntimeStatus?.("creating", "Creating isolated Python runtime");
-        return { executable: "python-test", version: "3.12.0", coreVersion: "0.2.0" };
+        return { executable: "python-test", version: "3.12.0", coreVersion: "0.2.1" };
       },
       createBridge: () => bridge,
       stderr: (value) => stderr.push(value),

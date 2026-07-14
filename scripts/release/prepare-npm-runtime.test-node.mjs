@@ -9,7 +9,7 @@ import { prepareNpmRuntime } from "./prepare-npm-runtime.mjs";
 
 const roots = [];
 
-async function fixture(version = "0.2.0") {
+async function fixture(version = "0.2.1") {
   const root = join(tmpdir(), `ato-prepare-runtime-${randomUUID()}`);
   const distDir = join(root, "dist");
   const vendorDir = join(root, "vendor");
@@ -29,22 +29,22 @@ test("requires exactly one wheel", async () => {
   await assert.rejects(prepareNpmRuntime(empty), /exactly one ato_core wheel/i);
 
   const multiple = await fixture();
-  await writeFile(join(multiple.distDir, "ato_core-0.2.0-py3-none-any.whl"), "one");
-  await writeFile(join(multiple.distDir, "ato_core-0.2.1-py3-none-any.whl"), "two");
+  await writeFile(join(multiple.distDir, "ato_core-0.2.1-py3-none-any.whl"), "one");
+  await writeFile(join(multiple.distDir, "ato_core-0.2.2-py3-none-any.whl"), "two");
   await assert.rejects(prepareNpmRuntime(multiple), /exactly one ato_core wheel/i);
 });
 
 test("rejects a wheel whose version differs from package.json", async () => {
-  const paths = await fixture("0.2.0");
-  await writeFile(join(paths.distDir, "ato_core-0.2.1-py3-none-any.whl"), "wheel");
+  const paths = await fixture("0.2.1");
+  await writeFile(join(paths.distDir, "ato_core-0.2.2-py3-none-any.whl"), "wheel");
 
-  await assert.rejects(prepareNpmRuntime(paths), /wheel version 0\.2\.1.*package version 0\.2\.0/i);
+  await assert.rejects(prepareNpmRuntime(paths), /wheel version 0\.2\.2.*package version 0\.2\.1/i);
 });
 
 test("writes a stable wheel name and exact hash manifest", async () => {
-  const paths = await fixture("0.2.0");
+  const paths = await fixture("0.2.1");
   const wheel = Buffer.from("wheel-content");
-  await writeFile(join(paths.distDir, "ato_core-0.2.0-py3-none-any.whl"), wheel);
+  await writeFile(join(paths.distDir, "ato_core-0.2.1-py3-none-any.whl"), wheel);
 
   const result = await prepareNpmRuntime(paths);
   const copied = await readFile(join(paths.vendorDir, "ato-core.whl"));
@@ -62,8 +62,8 @@ test("writes a stable wheel name and exact hash manifest", async () => {
   ]);
   assert.deepEqual(manifest, {
     schemaVersion: 1,
-    packageVersion: "0.2.0",
-    coreVersion: "0.2.0",
+    packageVersion: "0.2.1",
+    coreVersion: "0.2.1",
     wheel: "ato-core.whl",
     sha256: createHash("sha256").update(wheel).digest("hex"),
   });
