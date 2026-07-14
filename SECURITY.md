@@ -16,10 +16,13 @@ ATO runs model-selected tools on a local project. Read-only tools may run automa
 
 The core resolves paths against a configured project root, denies outside-root filesystem access, runs Git in the target repository, bounds subprocess time, and redacts secret-like argument keys in persisted audit summaries. These controls reduce risk but do not make untrusted prompts or unreviewed approvals safe.
 
+The root npm package includes a SHA-256 manifest for its Python wheel. First-run provisioning validates the manifest and path containment, creates an isolated versioned environment under an exclusive lock, bounds venv/pip/probe subprocesses, redacts install diagnostics, and promotes only a successfully probed runtime. npm installation itself runs no Python postinstall script.
+
 ## User responsibilities
 
 - Review the tool name, task ID, request ID, and argument summary before approving.
 - Run ATO with the least filesystem and account permissions required.
 - Keep API keys in environment variables or a secret manager, never task descriptions.
+- Treat Python package-index configuration as sensitive; authenticated URLs are redacted from ATO errors but still belong in your normal secret-management path.
 - Protect `ato-output` because task artifacts may contain project information.
 - Do not enable automatic approval in production or on untrusted repositories.

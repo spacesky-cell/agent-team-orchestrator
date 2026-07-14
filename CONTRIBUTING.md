@@ -35,6 +35,10 @@ Package changes also require a cold-install check:
 ./scripts/e2e/cold-install.sh
 ```
 
+The cold-install gates build the Python wheel, embed it in the root npm tarball, and install only the four npm tarballs into a clean project. They must run without `ATO_PYTHON` or a preinstalled `ato_core`, and must prove that a second command reuses the managed runtime.
+
+Generated `vendor/`, `release-artifacts/`, Python distributions, npm tarballs, and release manifests are never committed. Release packages must be built once and published from the exact verified bytes in dependency order: shared, CLI, MCP, then root.
+
 ## Pull requests
 
 - Keep commits scoped and explain user-visible behavior.

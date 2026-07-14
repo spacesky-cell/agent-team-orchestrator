@@ -1,7 +1,6 @@
 # Agent Team Orchestrator
 
 [![CI](https://github.com/spacesky-cell/agent-team-orchestrator/actions/workflows/ci.yml/badge.svg)](https://github.com/spacesky-cell/agent-team-orchestrator/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/ato-core)](https://pypi.org/project/ato-core/)
 [![npm](https://img.shields.io/npm/v/@spacesky-cell/agent-team-orchestrator)](https://www.npmjs.com/package/@spacesky-cell/agent-team-orchestrator)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -14,12 +13,13 @@ ATO is a local multi-agent task runner built on LangGraph. It decomposes a task 
 Requirements: Python 3.10+, Node.js 18+, and an LLM provider. The default provider reuses an authenticated [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installation.
 
 ```bash
-pip install ato-core
 npm install --global @spacesky-cell/agent-team-orchestrator
 ato doctor
 ```
 
-`ato doctor` verifies the selected Python executable, installed `ato_core` version, packaged roles, project root, and Claude CLI availability. Set `ATO_PYTHON` when the desired Python is not first on PATH.
+The npm package includes the ATO Python wheel. The first command that needs the core creates an isolated, versioned runtime and may download Python dependencies; npm installation itself runs no postinstall script and does not modify global Python. `ato --version` and help remain immediate.
+
+`ato doctor` verifies the managed Python executable, `ato_core` version, packaged roles, project root, and Claude CLI availability. Advanced users can set `ATO_PYTHON` to a compatible Python that already contains `ato_core`.
 
 ## Run A Task
 
@@ -61,7 +61,7 @@ Add the installed stdio command to your MCP client:
     "ato": {
       "command": "ato-mcp",
       "env": {
-        "ATO_PYTHON": "/absolute/path/to/python"
+        "LLM_PROVIDER": "claude-cli"
       }
     }
   }
@@ -104,7 +104,8 @@ Use `export` instead of `set` on Unix shells. See [.env.example](.env.example) f
 - LLM task decomposition is validated for roles, dependencies, duplicate IDs, and cycles, but output quality still depends on the selected model.
 - Mutating tools pause for approval unless `ATO_AUTO_APPROVE_TOOLS=1` is explicitly enabled for development.
 - Semantic memory uses ChromaDB when available and degrades to local structured storage when it is not installed.
-- The CLI and MCP adapters require both the npm package and the Python `ato-core` package.
+- First runtime creation needs access to the configured Python package index unless dependencies are already cached.
+- The separately installable CLI and MCP adapter packages do not embed the wheel; end users should install the root package shown above.
 
 ## Development
 
@@ -122,8 +123,9 @@ The Windows clean-install release gate is `./scripts/e2e/cold-install.ps1`; Linu
 
 ```bash
 npm uninstall --global @spacesky-cell/agent-team-orchestrator
-pip uninstall ato-core
 ```
+
+Uninstall does not silently remove task outputs or the managed Python runtime. Runtime data is stored below `%LOCALAPPDATA%\AgentTeamOrchestrator` on Windows, `~/Library/Application Support/AgentTeamOrchestrator` on macOS, and `${XDG_DATA_HOME:-~/.local/share}/agent-team-orchestrator` on Linux. Set `ATO_HOME` to choose a different root, or remove that directory deliberately after uninstalling.
 
 Task outputs are ordinary local files and are not removed automatically.
 

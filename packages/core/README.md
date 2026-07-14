@@ -2,11 +2,11 @@
 
 Python owner layer for Agent Team Orchestrator. It provides task persistence, LangGraph execution, tool policy, durable approvals, packaged roles, memory, and the stable JSON bridge used by the npm adapters.
 
-## Install
+## Distribution
 
-```bash
-pip install ato-core
-```
+The supported end-user distribution is `@spacesky-cell/agent-team-orchestrator` on npm. Its root tarball embeds this wheel and lazily installs it into an ATO-owned virtual environment. This package is not published independently to PyPI for the current release.
+
+Contributors can install the owner layer in editable mode from the repository root with `python -m pip install -e "packages/core[dev]"`.
 
 ## Verify
 
@@ -22,4 +22,4 @@ On Windows, the bridge accepts UTF-8 stdin with or without a BOM.
 
 The default `LLM_PROVIDER=claude-cli` reuses an authenticated Claude Code CLI. Anthropic, OpenAI-compatible, and Ollama providers are also supported through environment variables documented in the repository [.env.example](../../.env.example).
 
-Most users should install the root npm package as well and operate ATO through `ato` or `ato-mcp`. The Python bridge is a machine protocol; human diagnostics belong on stderr.
+Users operate ATO through `ato` or `ato-mcp`. The Python bridge is a machine protocol; human diagnostics belong on stderr.

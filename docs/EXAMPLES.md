@@ -1,5 +1,15 @@
 # Examples
 
+## Verify the npm-managed runtime
+
+```bash
+ato --version
+ato doctor
+ato doctor
+```
+
+The version command does not create Python state. The first doctor may download dependencies; the second reuses the same managed executable.
+
 ## Repository review in the foreground
 
 ```bash

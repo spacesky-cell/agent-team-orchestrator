@@ -251,15 +251,15 @@
 - Consumes: the verified npm-only behavior and platform runtime paths.
 - Produces: one public install path, explicit prerequisites/first-run behavior, advanced override guidance, adapter caveats, uninstall cleanup, and architecture/security truth.
 
-- [ ] **Step 1: Rewrite all public setup paths**
+- [x] **Step 1: Rewrite all public setup paths**
 
   Replace public two-layer and PyPI instructions with the global npm command. State Node.js 18+, Python 3.10+, possible first-command dependency download, `ATO_HOME`, platform storage paths, deliberate runtime removal, and that `ATO_PYTHON` is an advanced override. Keep `pip install -e "packages/core[dev]"` only in contributor setup.
 
-- [ ] **Step 2: Synchronize architecture, MCP, package, and security docs**
+- [x] **Step 2: Synchronize architecture, MCP, package, and security docs**
 
   Document root-owned wheel/manifest, shared-owned provisioning, Python-owned business truth, stderr-only bootstrap status, standalone adapter limitations, hash/lock bounds, and no automatic runtime deletion.
 
-- [ ] **Step 3: Verify documentation has no stale public path**
+- [x] **Step 3: Verify documentation has no stale public path**
 
   Run:
 
@@ -270,7 +270,7 @@
 
   Expected: no matches. Manually confirm English and Chinese quickstarts show the same supported npm command.
 
-- [ ] **Step 4: Commit Task 5**
+- [x] **Step 4: Commit Task 5**
 
   ```bash
   git add README.md README_CN.md docs/QUICKSTART.md docs/MCP_GUIDE.md docs/EXAMPLES.md docs/architecture.md CONTRIBUTING.md SECURITY.md .env.example packages/shared/README.md packages/cli/README.md packages/mcp-server/README.md packages/core/README.md

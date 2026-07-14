@@ -4,8 +4,10 @@ ATO has one owner layer and two adapters.
 
 ```mermaid
 flowchart LR
-    CLI[CLI adapter] --> Bridge[python -m ato_core.bridge]
-    MCP[MCP stdio adapter] --> Bridge
+    Root[Root npm package: wheel + manifest] --> Runtime[Shared managed runtime]
+    Runtime --> Bridge[python -m ato_core.bridge]
+    CLI[CLI adapter] --> Runtime
+    MCP[MCP stdio adapter] --> Runtime
     Bridge --> Service[TaskService]
     Service --> Store[TaskStore]
     Service --> Worker[TaskWorker]
@@ -19,7 +21,13 @@ flowchart LR
 
 `ato_core` owns task IDs, state transitions, decomposition validation, parallel graph execution, tool policy, approval decisions, audit events, worker health, memory, and bridge schemas.
 
-TypeScript owns Python discovery, process transport, CLI rendering, MCP schemas, and protocol error mapping. It never infers business status from checkpoint or result files.
+TypeScript owns Python discovery, managed-runtime provisioning, process transport, CLI rendering, MCP schemas, and protocol error mapping. The root npm package owns the bundled wheel and hash manifest; shared code validates them and creates a versioned virtual environment. TypeScript never infers business status from checkpoint or result files.
+
+## Managed runtime boundary
+
+The root command shims set the absolute bundled manifest path before dynamically loading the CLI or MCP adapter. Discovery first honors a compatible explicit/project/system Python, then lazily provisions the bundled wheel when no existing core is available. Provisioning validates schema, version, path containment, and SHA-256 before any subprocess starts.
+
+Installations use a version-scoped exclusive lock, bounded subprocesses, a temporary directory, live core-version probes, and atomic promotion. The ready marker records only version, wheel hash, executable path, and completion time. Installation diagnostics are bounded and redacted on stderr; JSON bridge and MCP stdout remain machine-only.
 
 ## Task lifecycle
 

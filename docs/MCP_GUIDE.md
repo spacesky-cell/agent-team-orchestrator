@@ -1,6 +1,6 @@
 # MCP Guide
 
-ATO ships an MCP stdio adapter named `ato-mcp`. It is a protocol adapter over the installed `ato_core` bridge; it does not execute embedded Python or read task files directly.
+ATO ships an MCP stdio adapter named `ato-mcp`. It is a protocol adapter over the managed `ato_core` bridge; it does not implement orchestration semantics or read task files directly.
 
 ## Configuration
 
@@ -10,7 +10,6 @@ ATO ships an MCP stdio adapter named `ato-mcp`. It is a protocol adapter over th
     "ato": {
       "command": "ato-mcp",
       "env": {
-        "ATO_PYTHON": "/absolute/path/to/python",
         "LLM_PROVIDER": "claude-cli"
       }
     }
@@ -18,7 +17,7 @@ ATO ships an MCP stdio adapter named `ato-mcp`. It is a protocol adapter over th
 }
 ```
 
-Use an absolute Python path when the MCP host has a different PATH from your terminal. Run `ato doctor` in the same environment before configuring the client.
+Run `ato doctor` once in the same environment before configuring the client. ATO uses the same versioned runtime for CLI and MCP. Bootstrap status is written only to stderr, while MCP stdout remains reserved for protocol messages. Direct users of the standalone adapter package must provide `ATO_PYTHON`; the root npm package is the supported end-user entry point.
 
 ## Tools
 

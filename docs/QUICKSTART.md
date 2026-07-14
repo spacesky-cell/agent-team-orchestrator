@@ -1,13 +1,14 @@
 # Quickstart
 
-## 1. Install both runtime layers
+## 1. Install ATO
 
 ```bash
-pip install ato-core
 npm install --global @spacesky-cell/agent-team-orchestrator
 ```
 
-ATO needs Python 3.10+ and Node.js 18+. By default it invokes an authenticated Claude Code CLI. To select a specific Python environment:
+ATO needs Python 3.10+ and Node.js 18+. The npm package embeds the Python core wheel. The first real command creates a versioned virtual environment under the ATO data directory and may download its Python dependencies. npm installation has no postinstall script.
+
+By default ATO invokes an authenticated Claude Code CLI. Advanced users can select a Python environment that already contains a compatible `ato_core`:
 
 ```bash
 export ATO_PYTHON=/absolute/path/to/python
@@ -23,7 +24,7 @@ ato doctor
 ato roles
 ```
 
-`doctor` does not call an LLM. It verifies the installed Python core and runtime discovery.
+`doctor` does not call an LLM. On first use it prepares the managed runtime, then reports its exact Python path and core version. Later commands reuse that runtime.
 
 ## 3. Start a task
 
