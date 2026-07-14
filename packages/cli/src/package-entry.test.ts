@@ -14,6 +14,19 @@ describe("npm package entry points", () => {
     expect(existsSync(resolve(root, "bin/ato-mcp.js"))).toBe(true);
   });
 
+  it("sets the bundled manifest before dynamically importing either adapter", () => {
+    const root = resolve(import.meta.dirname, "../../..");
+    for (const filename of ["ato.js", "ato-mcp.js"]) {
+      const source = readFileSync(resolve(root, "bin", filename), "utf8");
+      const assignment = source.indexOf("ATO_BUNDLED_RUNTIME_MANIFEST");
+      const dynamicImport = source.indexOf("await import(");
+
+      expect(assignment).toBeGreaterThan(0);
+      expect(dynamicImport).toBeGreaterThan(assignment);
+      expect(source).not.toMatch(/^import\s+\{[^}]+\}\s+from\s+"@spacesky-cell\/ato-/m);
+    }
+  });
+
   it("imports CLI and MCP libraries without starting a process", async () => {
     const cli = await import("./index.js");
     const mcp = await import("../../mcp-server/src/index.js");

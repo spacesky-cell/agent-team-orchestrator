@@ -149,7 +149,7 @@
 - Modify: `bin/ato-mcp.js`
 - Modify: `packages/cli/src/package-entry.test.ts`
 - Create: `scripts/release/prepare-npm-runtime.mjs`
-- Create: `scripts/release/prepare-npm-runtime.test.mjs`
+- Create: `scripts/release/prepare-npm-runtime.test-node.mjs`
 - Modify: `package.json`
 - Modify: `.gitignore`
 
@@ -157,7 +157,7 @@
 - Consumes: one `ato_core-0.2.1-py3-none-any.whl` from a Python artifact directory.
 - Produces: `vendor/ato-core.whl`, `vendor/runtime-manifest.json`, and root shims that set `ATO_BUNDLED_RUNTIME_MANIFEST` before importing adapter code.
 
-- [ ] **Step 1: Add shim and preparation RED tests**
+- [x] **Step 1: Add shim and preparation RED tests**
 
   Extend package-entry tests to assert dynamic imports occur after the environment assignment. Add Node test cases for zero/multiple/wrong-version wheels and for a valid wheel producing stable filename, exact manifest keys, and matching lowercase SHA-256.
 
@@ -166,26 +166,26 @@
   assert.equal(manifest.wheel, "ato-core.whl");
   ```
 
-- [ ] **Step 2: Verify preparation tests fail**
+- [x] **Step 2: Verify preparation tests fail**
 
-  Run: `node --test scripts/release/prepare-npm-runtime.test.mjs && pnpm exec vitest run packages/cli/src/package-entry.test.ts`
+  Run: `node --test scripts/release/prepare-npm-runtime.test-node.mjs && pnpm exec vitest run packages/cli/src/package-entry.test.ts`
 
   Expected: FAIL because the preparation script and dynamic shim behavior do not exist.
 
-- [ ] **Step 3: Implement atomic vendor preparation and dynamic shims**
+- [x] **Step 3: Implement atomic vendor preparation and dynamic shims**
 
   Resolve paths from `import.meta.url`, refuse version drift, copy through temporary files, atomically replace generated files, set the internal manifest variable only when absent, and use top-level `await import(...)`. Add `vendor` to root package `files`, add a `prepare:npm-runtime` script, and ignore `/vendor/`.
 
-- [ ] **Step 4: Verify Task 3**
+- [x] **Step 4: Verify Task 3**
 
-  Run: `node --test scripts/release/prepare-npm-runtime.test.mjs && pnpm exec vitest run packages/cli/src/package-entry.test.ts && pnpm run build`
+  Run: `node --test scripts/release/prepare-npm-runtime.test-node.mjs && pnpm exec vitest run packages/cli/src/package-entry.test.ts && pnpm run build`
 
   Expected: preparation and shim tests pass and all packages build.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
   ```bash
-  git add bin/ato.js bin/ato-mcp.js packages/cli/src/package-entry.test.ts scripts/release/prepare-npm-runtime.mjs scripts/release/prepare-npm-runtime.test.mjs package.json .gitignore
+  git add bin/ato.js bin/ato-mcp.js packages/cli/src/package-entry.test.ts scripts/release/prepare-npm-runtime.mjs scripts/release/prepare-npm-runtime.test-node.mjs package.json .gitignore
   git commit -m "feat(package): embed Python core wheel"
   ```
 

@@ -16,6 +16,7 @@ build/
 htmlcov/
 coverage/
 release-artifacts/
+/vendor/
 /release-manifest.json
 .tox/
 .mypy_cache/

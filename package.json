@@ -13,10 +13,11 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r dev",
-    "test": "python -m pytest packages/core/tests -q --cov=ato_core --cov-fail-under=70 && pnpm exec vitest run --coverage --passWithNoTests",
+    "test": "python -m pytest packages/core/tests -q --cov=ato_core --cov-fail-under=70 && node --test scripts/release/*.test-node.mjs && pnpm exec vitest run --coverage --passWithNoTests",
     "lint": "python -m black --check packages/core/src packages/core/tests && python -m ruff check packages/core/src packages/core/tests && pnpm --filter @spacesky-cell/ato-shared lint && pnpm --filter @spacesky-cell/ato-cli lint && pnpm --filter @spacesky-cell/ato-mcp-server lint",
     "typecheck": "python -m mypy packages/core/src && pnpm --filter @spacesky-cell/ato-shared build && pnpm --filter @spacesky-cell/ato-shared exec tsc --noEmit && pnpm --filter @spacesky-cell/ato-cli exec tsc --noEmit && pnpm --filter @spacesky-cell/ato-mcp-server exec tsc --noEmit",
     "verify": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
+    "prepare:npm-runtime": "node scripts/release/prepare-npm-runtime.mjs",
     "clean": "pnpm -r clean"
   },
   "keywords": [
@@ -33,6 +34,7 @@
   },
   "files": [
     "bin",
+    "vendor",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
